@@ -1,46 +1,99 @@
+import Link from "next/link";
+import { Gem, Heart, Leaf, Sparkles } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ProductCard from "@/components/ui/ProductCard";
 
-const sampleProducts = [
+const categories = [
+  { name: "Kanjivaram", slug: "kanjivaram", icon: Sparkles },
+  { name: "Banarasi", slug: "banarasi", icon: Gem },
+  { name: "Cotton", slug: "cotton", icon: Leaf },
+  { name: "Wedding Edit", slug: "wedding-edit", icon: Heart },
+];
+
+const newArrivals = [
   {
     image: "samples/saree-1",
-    name: "Banarasi Silk Saree — Crimson Gold",
-    price: 12500,
-    discountPrice: 9999,
+    name: "Kanjivaram Pure Silk — Temple Border Maroon",
+    price: 18900,
     status: "available" as const,
   },
   {
     image: "samples/saree-2",
-    name: "Kanjivaram Pure Silk — Temple Border",
-    price: 18900,
-    status: "reserved" as const,
+    name: "Banarasi Brocade — Crimson Gold Zari",
+    price: 14500,
+    status: "available" as const,
   },
   {
     image: "samples/saree-3",
-    name: "Chanderi Cotton Silk — Ivory Floral",
-    price: 6500,
-    status: "sold" as const,
+    name: "Chanderi Cotton Silk — Ivory Floral Butti",
+    price: 6800,
+    status: "available" as const,
+  },
+  {
+    image: "samples/saree-4",
+    name: "Tussar Silk — Natural Gold Block Print",
+    price: 9200,
+    status: "available" as const,
+  },
+  {
+    image: "samples/saree-5",
+    name: "Paithani Silk — Peacock Pallu Green",
+    price: 22400,
+    status: "available" as const,
+  },
+  {
+    image: "samples/saree-6",
+    name: "Organza Embroidered — Blush Pink Bridal",
+    price: 15800,
+    status: "available" as const,
   },
 ];
 
 export default function HomePage() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <section className="mb-10 flex flex-col gap-3 sm:flex-row">
-        <Button variant="primary">Shop the collection</Button>
-        <Button variant="whatsapp">Buy Now on WhatsApp</Button>
-      </section>
-
-      <section>
-        <h2 className="mb-6 font-heading text-2xl text-brand-plum">
-          Featured Sarees
-        </h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6">
-          {sampleProducts.map((product) => (
-            <ProductCard key={product.name} {...product} />
-          ))}
+    <>
+      {/* Hero: replace solid bg-brand-plum with getImageUrl("hero/home") via next/image when ready */}
+      <section className="w-full bg-brand-plum px-4 py-16 text-center sm:py-20">
+        <h1 className="font-heading text-3xl text-brand-blush sm:text-4xl">
+          Woven with elegance
+        </h1>
+        <p className="mx-auto mt-3 max-w-md text-sm font-light text-brand-rose sm:text-base">
+          Handpicked sarees crafted in silk, zari, and timeless tradition
+        </p>
+        <div className="mt-8">
+          <Button variant="primary" href="/category">
+            Explore new arrivals
+          </Button>
         </div>
       </section>
-    </div>
+
+      <div className="mx-auto max-w-6xl px-4 py-10">
+        <section>
+          <div className="grid grid-cols-3 gap-3 lg:grid-cols-4">
+            {categories.map(({ name, slug, icon: Icon }) => (
+              <Link
+                key={slug}
+                href={`/category/${slug}`}
+                className="flex flex-col items-center rounded-lg border border-brand-blushDark bg-brand-white px-3 py-5"
+              >
+                <Icon className="h-7 w-7 text-brand-mauve" strokeWidth={1.5} />
+                <span className="mt-3 text-center text-sm text-brand-plum">
+                  {name}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <h2 className="font-heading text-2xl text-brand-plum">New arrivals</h2>
+          <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {newArrivals.map((product) => (
+              <ProductCard key={product.name} {...product} />
+            ))}
+          </div>
+        </section>
+      </div>
+    </>
   );
 }

@@ -26,17 +26,19 @@ export default function ProductCard({
   discountPrice,
   status,
 }: ProductCardProps) {
-  const imageUrl = getImageUrl(image, 400);
+  const imageWidth = 400;
+  const imageHeight = 533;
+  const imageUrl = getImageUrl(image, imageWidth);
 
   return (
     <article className="w-full">
-      <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-brand-blushDark">
+      <div className="relative overflow-hidden rounded-lg bg-brand-blushDark">
         <Image
           src={imageUrl}
           alt={name}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className={`object-cover ${status === "sold" ? "opacity-60" : ""}`}
+          width={imageWidth}
+          height={imageHeight}
+          className={`h-auto w-full object-cover ${status === "sold" ? "opacity-60" : ""}`}
         />
 
         {status === "reserved" && (
