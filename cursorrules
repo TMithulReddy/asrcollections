@@ -1,0 +1,55 @@
+# ASR Collections — Cursor Project Rules
+
+## Stack (do not deviate without flagging it first)
+- Next.js 14, App Router, TypeScript (strict mode)
+- Tailwind CSS — brand colors already defined in tailwind.config.ts:
+  brand.plum #5C1F35, brand.rose #8C4A5E, brand.blush #F5E3E6,
+  brand.blushDark #ECCDD3, brand.mauve #9C6B57, brand.white #FFFFFF
+- Fonts: font-heading = Playfair Display, body = Inter
+- Supabase (@supabase/supabase-js) for database — client lives at lib/supabase.ts
+- Cloudinary for all product images (cloud name: hzxrxgf1, unsigned preset:
+  asr_products) — never Supabase Storage for images
+- No payment gateway. No OTP/SMS verification. Checkout is a WhatsApp
+  redirect (wa.me link), not a payment flow.
+
+## Source of truth
+- The PRD (ASR_Collections_PRD.md) and asr_collections_schema.sql are the
+  spec. If a prompt asks for something that conflicts with either file,
+  implement what's asked but add a comment flagging the conflict — do not
+  silently change the schema or the PRD.
+
+## Code conventions
+- Functional components with hooks. Named exports, not default exports.
+- Server components by default; only use "use client" when the component
+  genuinely needs interactivity or browser state.
+- Absolute imports with @/ prefix.
+- Mobile-first Tailwind: unprefixed classes = mobile layout, sm:/md:/lg:
+  scale up only.
+- No gradients, drop shadows, or glow effects on brand UI elements — flat
+  design throughout.
+
+## Safety rails (non-negotiable)
+- NEVER delete or overwrite .env.local, package.json, or any file in
+  /supabase without explicit confirmation first.
+- NEVER run destructive SQL (DROP, TRUNCATE, DELETE without a WHERE clause)
+  against Supabase without stating exactly what it does and getting
+  confirmation first.
+- NEVER add a new npm dependency that wasn't explicitly requested, without
+  asking first.
+- Before importing any package, verify it's actually installed
+  (`npm list <package>`) rather than assuming from training data.
+- Before any multi-file change, create a git checkpoint first:
+  `git add -A && git commit -m "checkpoint: before <task>"`.
+
+## Output quality
+- Zero placeholders. Never leave `// TODO: implement this` or
+  `// rest of the code here` — either fully implement a function or clearly
+  say why you can't and what you need to proceed.
+- Be concise. Don't explain standard/obvious code patterns unless asked.
+- After any change, state exactly how to verify it worked (a command to
+  run, a page to check) — not just "this should work now."
+
+## Scope discipline
+- Only touch the files named in the current prompt. If a fix genuinely
+  requires touching an out-of-scope file, say so before doing it.
+- One task per prompt. Don't bundle unrelated changes into a single edit.
