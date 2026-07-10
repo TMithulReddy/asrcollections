@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { Heart, Search, ShoppingBag } from "lucide-react";
+import { Heart, Search } from "lucide-react";
+import CartNavLink from "@/components/ui/CartNavLink";
+import { CartProvider } from "@/lib/cart-context";
 
 const footerLinks = [
   { href: "/about", label: "About" },
@@ -14,7 +16,8 @@ export default function SiteLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col">
+    <CartProvider>
+      <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 border-b border-brand-blushDark bg-brand-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <Link
@@ -31,9 +34,7 @@ export default function SiteLayout({
             <button type="button" aria-label="Wishlist" className="p-1">
               <Heart className="h-5 w-5" strokeWidth={1.75} />
             </button>
-            <button type="button" aria-label="Cart" className="p-1">
-              <ShoppingBag className="h-5 w-5" strokeWidth={1.75} />
-            </button>
+            <CartNavLink />
           </nav>
         </div>
       </header>
@@ -62,6 +63,7 @@ export default function SiteLayout({
           </p>
         </div>
       </footer>
-    </div>
+      </div>
+    </CartProvider>
   );
 }
