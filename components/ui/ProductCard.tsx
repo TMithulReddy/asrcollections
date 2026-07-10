@@ -11,12 +11,8 @@ interface ProductCardProps {
   status: ProductStatus;
 }
 
-function formatPrice(amount: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
+function formatPrice(amount: number | string): string {
+  return "₹" + Number(amount).toLocaleString("en-IN");
 }
 
 export default function ProductCard({
@@ -59,7 +55,7 @@ export default function ProductCard({
       </h3>
 
       <div className="mt-1 flex flex-wrap items-baseline gap-2">
-        {discountPrice !== undefined ? (
+        {discountPrice != null ? (
           <>
             <span className="text-sm text-brand-rose line-through">
               {formatPrice(price)}

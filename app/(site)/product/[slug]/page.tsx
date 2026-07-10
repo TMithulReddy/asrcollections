@@ -7,12 +7,8 @@ import { supabase } from "@/lib/supabase";
 
 type ProductStatus = "available" | "reserved" | "sold";
 
-function formatPrice(amount: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
+function formatPrice(amount: number | string): string {
+  return "₹" + Number(amount).toLocaleString("en-IN");
 }
 
 function statusLabel(status: ProductStatus): string {
@@ -148,8 +144,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <AddToCartButton
               productId={params.slug}
               name={product.name}
-              price={product.price}
-              discountPrice={product.discount_price}
+              price={Number(product.price)}
+              discountPrice={
+                product.discount_price !== null && product.discount_price !== undefined
+                  ? Number(product.discount_price)
+                  : undefined
+              }
               image={sortedImages[0] || ""}
               disabled={isUnavailable}
             />
