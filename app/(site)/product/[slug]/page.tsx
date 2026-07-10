@@ -1,5 +1,5 @@
 import AddToCartButton from "@/components/ui/AddToCartButton";
-import Button from "@/components/ui/Button";
+import BuyNowButton from "@/components/ui/BuyNowButton";
 import ProductCard from "@/components/ui/ProductCard";
 import ProductGallery from "@/components/ui/ProductGallery";
 import Link from "next/link";
@@ -174,9 +174,10 @@ export default function ProductPage({ params }: ProductPageProps) {
           </p>
 
           <div className="mt-8 flex flex-col gap-3">
-            <Button variant="whatsapp" disabled={isUnavailable}>
-              Buy now via WhatsApp
-            </Button>
+            <BuyNowButton
+              productSlug={params.slug}
+              disabled={isUnavailable}
+            />
             <AddToCartButton
               productId={params.slug}
               name={product.name}
