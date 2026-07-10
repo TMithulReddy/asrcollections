@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabase";
+import { insertOrderWithRetry } from "@/lib/order-ref";
+import { rollbackOrder } from "@/lib/order-rollback";
 
 interface BuyNowOrderInput {
   productSlug: string;
@@ -10,76 +12,6 @@ interface BuyNowOrderResult {
   orderRef: string;
   productName: string;
   price: number;
-}
-
-function generateOrderRef(): string {
-  const digits = Math.floor(1000 + Math.random() * 9000);
-  return `ASR-${digits}`;
-}
-
-async function isOrderRefTaken(orderRef: string): Promise<boolean> {
-  const { data, error } = await supabase
-    .from("orders")
-    .select("id")
-    .eq("order_ref", orderRef)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  return Boolean(data);
-}
-
-async function generateUniqueOrderRef(): Promise<string> {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const orderRef = generateOrderRef();
-    const taken = await isOrderRefTaken(orderRef);
-    if (!taken) {
-      return orderRef;
-    }
-  }
-
-  return generateOrderRef();
-}
-
-async function rollbackBuyNowOrder({
-  customerId,
-  orderId,
-}: {
-  customerId: string | null;
-  orderId: string | null;
-}) {
-  if (orderId) {
-    const { error: itemsError } = await supabase
-      .from("order_items")
-      .delete()
-      .eq("order_id", orderId);
-
-    if (itemsError) {
-      console.error("Buy now rollback failed on order_items:", itemsError);
-    }
-
-    const { error: orderError } = await supabase
-      .from("orders")
-      .delete()
-      .eq("id", orderId);
-
-    if (orderError) {
-      console.error("Buy now rollback failed on orders:", orderError);
-    }
-  }
-
-  if (customerId) {
-    const { error: customerError } = await supabase
-      .from("customers")
-      .delete()
-      .eq("id", customerId);
-
-    if (customerError) {
-      console.error("Buy now rollback failed on customers:", customerError);
-    }
-  }
 }
 
 export async function createBuyNowOrder(
@@ -120,37 +52,11 @@ export async function createBuyNowOrder(
 
     customerId = customer.id;
 
-    let orderRef: string | null = null;
-
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      orderRef = await generateUniqueOrderRef();
-
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          customer_id: customerId,
-          order_ref: orderRef,
-          status: "pending",
-          total_amount: salePrice,
-        })
-        .select("id")
-        .single();
-
-      if (!orderError && order) {
-        orderId = order.id;
-        break;
-      }
-
-      if (orderError?.code === "23505") {
-        continue;
-      }
-
-      throw orderError ?? new Error("Failed to create order");
-    }
-
-    if (!orderId || !orderRef) {
-      throw new Error("Failed to create order after retry");
-    }
+    const order = await insertOrderWithRetry({
+      customerId: customer.id,
+      totalAmount: salePrice,
+    });
+    orderId = order.orderId;
 
     const { error: orderItemError } = await supabase.from("order_items").insert({
       order_id: orderId,
@@ -183,13 +89,13 @@ export async function createBuyNowOrder(
     }
 
     return {
-      orderRef,
+      orderRef: order.orderRef,
       productName: product.name,
       price: salePrice,
     };
   } catch (error) {
     console.error("Buy now order failed:", error);
-    await rollbackBuyNowOrder({ customerId, orderId });
+    await rollbackOrder({ customerId, orderId });
     throw error;
   }
 }

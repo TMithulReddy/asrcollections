@@ -3,20 +3,14 @@
 import { FormEvent, useState } from "react";
 import Button from "@/components/ui/Button";
 import CustomerCheckoutModal from "@/components/ui/CustomerCheckoutModal";
+import { useCart } from "@/lib/cart-context";
 import { validateCustomerDetails } from "@/lib/checkout-validation";
-import { buildBuyNowMessage, buildWhatsAppUrl } from "@/lib/whatsapp";
-
-interface BuyNowButtonProps {
-  productSlug: string;
-  disabled?: boolean;
-}
+import { buildCartCheckoutMessage, buildWhatsAppUrl } from "@/lib/whatsapp";
 
 type ModalStep = "form" | "success";
 
-export default function BuyNowButton({
-  productSlug,
-  disabled = false,
-}: BuyNowButtonProps) {
+export default function CartCheckoutButton() {
+  const { items, clearCart } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<ModalStep>("form");
   const [name, setName] = useState("");
@@ -69,34 +63,41 @@ export default function BuyNowButton({
     setSubmitError("");
 
     try {
-      const response = await fetch("/api/buy-now", {
+      const response = await fetch("/api/cart-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productSlug,
           name: name.trim(),
           phone,
+          items: items.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+          })),
         }),
       });
 
       const data = (await response.json()) as {
         orderRef?: string;
-        productName?: string;
-        price?: number;
+        totalAmount?: number;
+        lineItems?: { name: string; quantity: number; unitPrice: number }[];
         error?: string;
       };
 
-      if (!response.ok || !data.orderRef || !data.productName || !data.price) {
+      if (
+        !response.ok ||
+        !data.orderRef ||
+        !data.totalAmount ||
+        !data.lineItems?.length
+      ) {
         setSubmitError(
           data.error ?? "Something went wrong, please try again."
         );
         return;
       }
 
-      const message = buildBuyNowMessage({
-        productName: data.productName,
-        price: data.price,
-        productPageUrl: window.location.href,
+      const message = buildCartCheckoutMessage({
+        lineItems: data.lineItems,
+        totalAmount: data.totalAmount,
         orderRef: data.orderRef,
         customerName: name.trim(),
         customerPhone: validation.normalizedPhone,
@@ -108,6 +109,7 @@ export default function BuyNowButton({
         "noopener,noreferrer"
       );
 
+      clearCart();
       setOrderRef(data.orderRef);
       setStep("success");
     } catch {
@@ -132,10 +134,10 @@ export default function BuyNowButton({
       onNameChange={setName}
       onPhoneChange={setPhone}
       onSubmit={handleSubmit}
-      formId="buy-now"
+      formId="cart-checkout"
       trigger={
-        <Button variant="whatsapp" disabled={disabled} onClick={openModal}>
-          Buy now via WhatsApp
+        <Button variant="whatsapp" onClick={openModal}>
+          Checkout via WhatsApp
         </Button>
       }
     />

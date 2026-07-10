@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
+import { normalizePhone } from "@/lib/checkout-validation";
 import { createBuyNowOrder } from "@/lib/create-buy-now-order";
 
 interface BuyNowRequestBody {
   productSlug?: string;
   name?: string;
   phone?: string;
-}
-
-function normalizePhone(phone: string): string {
-  return phone.replace(/\D/g, "");
 }
 
 export async function POST(request: Request) {

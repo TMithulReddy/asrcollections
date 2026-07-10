@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
-import Button from "@/components/ui/Button";
+import CartCheckoutButton from "@/components/ui/CartCheckoutButton";
 import { useCart } from "@/lib/cart-context";
 import { getImageUrl } from "@/lib/cloudinary";
 
@@ -137,7 +137,7 @@ export default function CartPageContent() {
           <span className="text-lg font-bold">{formatPrice(cartTotal)}</span>
         </div>
 
-        <Button variant="whatsapp">Checkout via WhatsApp</Button>
+        <CartCheckoutButton />
       </div>
     </div>
   );
