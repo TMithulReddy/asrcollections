@@ -2,19 +2,10 @@ import AddToCartButton from "@/components/ui/AddToCartButton";
 import BuyNowButton from "@/components/ui/BuyNowButton";
 import ProductCard from "@/components/ui/ProductCard";
 import ProductGallery from "@/components/ui/ProductGallery";
-import Link from "next/link";
+import { notFound } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 type ProductStatus = "available" | "reserved" | "sold";
-
-interface Product {
-  name: string;
-  price: number;
-  discountPrice?: number;
-  fabric: string;
-  description: string;
-  status: ProductStatus;
-  images: string[];
-}
 
 function formatPrice(amount: number): string {
   return new Intl.NumberFormat("en-IN", {
@@ -23,65 +14,6 @@ function formatPrice(amount: number): string {
     maximumFractionDigits: 0,
   }).format(amount);
 }
-
-const products: Record<string, Product> = {
-  "padma-silk-saree": {
-    name: "Padma Silk Saree — Temple Border Gold",
-    price: 18500,
-    discountPrice: 14900,
-    fabric: "Pure Kanjivaram Silk",
-    description:
-      "A richly woven Kanjivaram silk saree featuring a traditional temple border in antique gold zari. The body carries a subtle checked texture in deep maroon, finished with a contrasting pallu woven in classic South Indian motifs. Lightweight enough for festive wear, yet substantial in drape and sheen.",
-    status: "available",
-    images: [
-      "samples/padma-1",
-      "samples/padma-2",
-      "samples/padma-3",
-      "samples/padma-4",
-    ],
-  },
-  "banarasi-brocade-saree": {
-    name: "Banarasi Brocade — Crimson Gold Zari",
-    price: 14500,
-    fabric: "Pure Banarasi Silk",
-    description:
-      "An opulent Banarasi brocade woven with dense crimson silk and antique gold zari florals across the body. The pallu features traditional jaal motifs with a rich, weighty drape suited for weddings and formal celebrations.",
-    status: "available",
-    images: [
-      "samples/saree-2",
-      "samples/saree-3",
-      "samples/saree-4",
-    ],
-  },
-};
-
-const relatedProducts = [
-  {
-    image: "samples/saree-2",
-    name: "Banarasi Brocade — Crimson Gold Zari",
-    price: 14500,
-    status: "available" as const,
-  },
-  {
-    image: "samples/saree-5",
-    name: "Paithani Silk — Peacock Pallu Green",
-    price: 22400,
-    status: "reserved" as const,
-  },
-  {
-    image: "samples/saree-6",
-    name: "Organza Embroidered — Blush Pink Bridal",
-    price: 15800,
-    discountPrice: 13200,
-    status: "available" as const,
-  },
-  {
-    image: "samples/saree-8",
-    name: "Kota Doria — Lime Green Stripes",
-    price: 4500,
-    status: "available" as const,
-  },
-];
 
 function statusLabel(status: ProductStatus): string {
   if (status === "available") return "Available";
@@ -110,38 +42,73 @@ interface ProductPageProps {
   params: { slug: string };
 }
 
-export default function ProductPage({ params }: ProductPageProps) {
-  const product = products[params.slug];
+export default async function ProductPage({ params }: ProductPageProps) {
+  const { data: product } = await supabase
+    .from("products")
+    .select(`
+      *,
+      categories (
+        name
+      ),
+      product_images (
+        image_url,
+        display_order
+      )
+    `)
+    .eq("slug", params.slug)
+    .single();
+
   if (!product) {
-    return (
-      <div className="mx-auto max-w-6xl px-4 py-16 text-center">
-        <h1 className="font-heading text-2xl text-brand-plum">Product not found</h1>
-        <Link
-          href="/category"
-          className="mt-4 inline-block text-sm text-brand-mauve hover:underline"
-        >
-          Browse sarees
-        </Link>
-      </div>
-    );
+    notFound();
   }
+
+  const sortedImages = [...(product.product_images || [])]
+    .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+    .map((img) => img.image_url);
+
+  const { data: relatedData } = await supabase
+    .from("products")
+    .select(`
+      *,
+      product_images (
+        image_url,
+        display_order
+      )
+    `)
+    .eq("category_id", product.category_id)
+    .neq("id", product.id)
+    .limit(4);
+
+  const relatedProducts = (relatedData || []).map((related) => {
+    const rSorted = [...(related.product_images || [])].sort(
+      (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+    );
+    return {
+      name: related.name,
+      price: related.price,
+      discountPrice: related.discount_price,
+      status: related.status as ProductStatus,
+      image: rSorted.length > 0 ? rSorted[0].image_url : "",
+    };
+  });
+
   const isUnavailable = product.status !== "available";
-  const note = statusNote(product.status);
+  const note = statusNote(product.status as ProductStatus);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
         <ProductGallery
-          images={product.images}
+          images={sortedImages}
           alt={product.name}
           dimmed={product.status === "sold"}
         />
 
         <div>
           <span
-            className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${statusBadgeClass(product.status)}`}
+            className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${statusBadgeClass(product.status as ProductStatus)}`}
           >
-            {statusLabel(product.status)}
+            {statusLabel(product.status as ProductStatus)}
           </span>
 
           <h1 className="mt-3 font-heading text-2xl text-brand-plum sm:text-3xl">
@@ -149,13 +116,13 @@ export default function ProductPage({ params }: ProductPageProps) {
           </h1>
 
           <div className="mt-4 flex flex-wrap items-baseline gap-2">
-            {product.discountPrice !== undefined ? (
+            {product.discount_price !== null && product.discount_price !== undefined ? (
               <>
                 <span className="text-lg text-brand-rose line-through">
                   {formatPrice(product.price)}
                 </span>
                 <span className="text-xl font-bold text-brand-plum">
-                  {formatPrice(product.discountPrice)}
+                  {formatPrice(product.discount_price)}
                 </span>
               </>
             ) : (
@@ -166,7 +133,7 @@ export default function ProductPage({ params }: ProductPageProps) {
           </div>
 
           <p className="mt-4 text-sm text-brand-mauve">
-            Fabric: <span className="text-brand-plum">{product.fabric}</span>
+            Fabric: <span className="text-brand-plum">{product.fabric_type}</span>
           </p>
 
           <p className="mt-4 text-sm leading-relaxed text-brand-rose">
@@ -182,8 +149,8 @@ export default function ProductPage({ params }: ProductPageProps) {
               productId={params.slug}
               name={product.name}
               price={product.price}
-              discountPrice={product.discountPrice}
-              image={product.images[0]}
+              discountPrice={product.discount_price}
+              image={sortedImages[0] || ""}
               disabled={isUnavailable}
             />
             {note && (
@@ -193,16 +160,18 @@ export default function ProductPage({ params }: ProductPageProps) {
         </div>
       </div>
 
-      <section className="mt-16">
-        <h2 className="font-heading text-2xl text-brand-plum">
-          You may also like
-        </h2>
-        <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {relatedProducts.map((item) => (
-            <ProductCard key={item.name} {...item} />
-          ))}
-        </div>
-      </section>
+      {relatedProducts.length > 0 && (
+        <section className="mt-16">
+          <h2 className="font-heading text-2xl text-brand-plum">
+            You may also like
+          </h2>
+          <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {relatedProducts.map((item) => (
+              <ProductCard key={item.name} {...item} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

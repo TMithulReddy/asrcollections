@@ -2,54 +2,48 @@ import Link from "next/link";
 import { Gem, Heart, Leaf, Sparkles } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ProductCard from "@/components/ui/ProductCard";
+import { supabase } from "@/lib/supabase";
 
-const categories = [
-  { name: "Kanjivaram", slug: "kanjivaram", icon: Sparkles },
-  { name: "Banarasi", slug: "banarasi", icon: Gem },
-  { name: "Cotton", slug: "cotton", icon: Leaf },
-  { name: "Wedding Edit", slug: "wedding-edit", icon: Heart },
-];
+const categoryIcons: Record<string, React.ElementType> = {
+  kanjivaram: Sparkles,
+  banarasi: Gem,
+  cotton: Leaf,
+  "wedding-edit": Heart,
+};
 
-const newArrivals = [
-  {
-    image: "samples/saree-1",
-    name: "Kanjivaram Pure Silk — Temple Border Maroon",
-    price: 18900,
-    status: "available" as const,
-  },
-  {
-    image: "samples/saree-2",
-    name: "Banarasi Brocade — Crimson Gold Zari",
-    price: 14500,
-    status: "available" as const,
-  },
-  {
-    image: "samples/saree-3",
-    name: "Chanderi Cotton Silk — Ivory Floral Butti",
-    price: 6800,
-    status: "available" as const,
-  },
-  {
-    image: "samples/saree-4",
-    name: "Tussar Silk — Natural Gold Block Print",
-    price: 9200,
-    status: "available" as const,
-  },
-  {
-    image: "samples/saree-5",
-    name: "Paithani Silk — Peacock Pallu Green",
-    price: 22400,
-    status: "available" as const,
-  },
-  {
-    image: "samples/saree-6",
-    name: "Organza Embroidered — Blush Pink Bridal",
-    price: 15800,
-    status: "available" as const,
-  },
-];
+export default async function HomePage() {
+  const { data: categories } = await supabase
+    .from("categories")
+    .select("*")
+    .order("display_order", { ascending: true });
 
-export default function HomePage() {
+  const { data: products } = await supabase
+    .from("products")
+    .select(`
+      *,
+      product_images (
+        image_url,
+        display_order
+      )
+    `)
+    .order("created_at", { ascending: false });
+
+  const newArrivals = (products || []).map((product) => {
+    // Sort images by display_order
+    const sortedImages = [...(product.product_images || [])].sort(
+      (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+    );
+    const imageUrl = sortedImages.length > 0 ? sortedImages[0].image_url : "";
+
+    return {
+      name: product.name,
+      price: product.price,
+      discountPrice: product.discount_price,
+      status: product.status as "available" | "reserved" | "sold",
+      image: imageUrl,
+    };
+  });
+
   return (
     <>
       {/* Hero */}
@@ -71,18 +65,21 @@ export default function HomePage() {
       <section className="w-full bg-brand-white">
         <div className="mx-auto max-w-6xl px-4 py-10">
           <div className="grid grid-cols-3 gap-3 lg:grid-cols-4">
-            {categories.map(({ name, slug, icon: Icon }) => (
-              <Link
-                key={slug}
-                href={`/category/${slug}`}
-                className="flex flex-col items-center rounded-lg border border-brand-blushDark bg-brand-white px-3 py-5 transition-shadow hover:shadow-md"
-              >
-                <Icon className="h-7 w-7 text-brand-mauve" strokeWidth={1.5} />
-                <span className="mt-3 text-center text-sm text-brand-plum">
-                  {name}
-                </span>
-              </Link>
-            ))}
+            {(categories || []).map(({ name, slug }) => {
+              const Icon = categoryIcons[slug] || Sparkles;
+              return (
+                <Link
+                  key={slug}
+                  href={`/category/${slug}`}
+                  className="flex flex-col items-center rounded-lg border border-brand-blushDark bg-brand-white px-3 py-5 transition-shadow hover:shadow-md"
+                >
+                  <Icon className="h-7 w-7 text-brand-mauve" strokeWidth={1.5} />
+                  <span className="mt-3 text-center text-sm text-brand-plum">
+                    {name}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
