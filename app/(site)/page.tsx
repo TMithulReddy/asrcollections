@@ -52,8 +52,8 @@ const newArrivals = [
 export default function HomePage() {
   return (
     <>
-      {/* Hero: replace solid bg-brand-plum with getImageUrl("hero/home") via next/image when ready */}
-      <section className="w-full bg-brand-plum px-4 py-16 text-center sm:py-20">
+      {/* Hero */}
+      <section className="w-full bg-brand-plumSoft px-4 py-16 text-center sm:py-20">
         <h1 className="font-heading text-3xl text-brand-blush sm:text-4xl">
           Woven with elegance
         </h1>
@@ -67,14 +67,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="mx-auto max-w-6xl px-4 py-10">
-        <section>
+      {/* Category tiles — white background */}
+      <section className="w-full bg-brand-white">
+        <div className="mx-auto max-w-6xl px-4 py-10">
           <div className="grid grid-cols-3 gap-3 lg:grid-cols-4">
             {categories.map(({ name, slug, icon: Icon }) => (
               <Link
                 key={slug}
                 href={`/category/${slug}`}
-                className="flex flex-col items-center rounded-lg border border-brand-blushDark bg-brand-white px-3 py-5"
+                className="flex flex-col items-center rounded-lg border border-brand-blushDark bg-brand-white px-3 py-5 transition-shadow hover:shadow-md"
               >
                 <Icon className="h-7 w-7 text-brand-mauve" strokeWidth={1.5} />
                 <span className="mt-3 text-center text-sm text-brand-plum">
@@ -83,17 +84,20 @@ export default function HomePage() {
               </Link>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="mt-12">
+      {/* New arrivals — blush background */}
+      <section className="w-full bg-brand-blush">
+        <div className="mx-auto max-w-6xl px-4 py-12">
           <h2 className="font-heading text-2xl text-brand-plum">New arrivals</h2>
           <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
             {newArrivals.map((product) => (
               <ProductCard key={product.name} {...product} />
             ))}
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </>
   );
 }

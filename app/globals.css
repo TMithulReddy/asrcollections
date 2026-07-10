@@ -2,22 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-}
+/* No OS dark-mode automatic overrides — all backgrounds are set
+   explicitly via Tailwind classes on each section/component. */
 
 @layer utilities {
   .text-balance {
