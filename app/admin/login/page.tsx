@@ -32,7 +32,7 @@ export default function AdminLoginPage() {
     }
 
     // Check if they actually have the admin role before redirecting
-    if (data.user && data.user.role !== "admin") {
+    if (data.user && data.user.app_metadata?.role !== "admin") {
       await supabase.auth.signOut();
       setError("This account exists, but does not have admin privileges. Did you run the SQL command in Supabase?");
       setIsLoading(false);

@@ -67,9 +67,9 @@ export async function updateSession(request: NextRequest) {
   const isLoginRoute = request.nextUrl.pathname === "/admin/login";
 
   if (isAdminRoute && !isLoginRoute) {
-    if (!user || user.role !== "admin") {
+    if (!user || user.app_metadata?.role !== "admin") {
       // If logged in but not admin, maybe sign them out or just redirect to login?
-      if (user && user.role !== "admin") {
+      if (user && user.app_metadata?.role !== "admin") {
         await supabase.auth.signOut();
       }
       
@@ -80,7 +80,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // If user is already an admin and tries to access /admin/login, redirect to dashboard
-  if (isLoginRoute && user && user.role === "admin") {
+  if (isLoginRoute && user && user.app_metadata?.role === "admin") {
     const url = request.nextUrl.clone();
     url.pathname = "/admin/dashboard";
     return NextResponse.redirect(url);
