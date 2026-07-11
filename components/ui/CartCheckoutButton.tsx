@@ -103,11 +103,7 @@ export default function CartCheckoutButton() {
         customerPhone: validation.normalizedPhone,
       });
 
-      window.open(
-        buildWhatsAppUrl(whatsappNumber, message),
-        "_blank",
-        "noopener,noreferrer"
-      );
+      window.location.assign(buildWhatsAppUrl(whatsappNumber, message));
 
       clearCart();
       setOrderRef(data.orderRef);

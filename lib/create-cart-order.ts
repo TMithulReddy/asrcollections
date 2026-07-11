@@ -1,6 +1,4 @@
 import { supabase } from "@/lib/supabase";
-import { insertOrderWithRetry } from "@/lib/order-ref";
-import { releaseReservedProducts, rollbackOrder } from "@/lib/order-rollback";
 import { expireStaleReservation } from "@/lib/expire-reservations";
 
 export interface CartCheckoutItem {
@@ -33,130 +31,67 @@ export async function createCartOrder(
     throw new Error("Cart is empty");
   }
 
-  let customerId: string | null = null;
-  let orderId: string | null = null;
-  const reservedProductIds: string[] = [];
+  const slugs = input.items.map((item) => item.productId);
 
-  try {
-    const slugs = input.items.map((item) => item.productId);
+  // Fetch product details to build lineItems for the WhatsApp message
+  const { data: products, error: productsError } = await supabase
+    .from("products")
+    .select("id, slug, name, price, discount_price")
+    .in("slug", slugs);
 
-    const { data: products, error: productsError } = await supabase
-      .from("products")
-      .select("id, slug, name, price, discount_price, status")
-      .in("slug", slugs);
-
-    if (productsError || !products) {
-      throw productsError ?? new Error("Failed to load products");
-    }
-
-    // Expire stale reservations for all products in the cart
-    for (const product of products) {
-      await expireStaleReservation(product.id);
-    }
-
-    // Re-fetch products after potential expiry to get fresh statuses
-    const { data: freshProducts, error: freshError } = await supabase
-      .from("products")
-      .select("id, slug, name, price, discount_price, status")
-      .in("slug", slugs);
-
-    if (freshError || !freshProducts) {
-      throw freshError ?? new Error("Failed to reload products");
-    }
-
-    const productBySlug = new Map(freshProducts.map((product) => [product.slug, product]));
-    const lineItems: CartCheckoutLineItem[] = [];
-    let totalAmount = 0;
-
-    for (const cartItem of input.items) {
-      const product = productBySlug.get(cartItem.productId);
-
-      if (!product) {
-        throw new Error(`Product not found: ${cartItem.productId}`);
-      }
-
-      if (product.status !== "available") {
-        throw new Error(`Product is not available: ${product.name}`);
-      }
-
-      const unitPrice = product.discount_price ?? product.price;
-      totalAmount += unitPrice * cartItem.quantity;
-
-      lineItems.push({
-        name: product.name,
-        quantity: cartItem.quantity,
-        unitPrice,
-      });
-    }
-
-    const { data: customer, error: customerError } = await supabase
-      .from("customers")
-      .insert({
-        name: input.customerName,
-        phone: input.customerPhone,
-      })
-      .select("id")
-      .single();
-
-    if (customerError || !customer) {
-      throw customerError ?? new Error("Failed to create customer");
-    }
-
-    customerId = customer.id;
-
-    const order = await insertOrderWithRetry({
-      customerId: customer.id,
-      totalAmount,
-    });
-    orderId = order.orderId;
-
-    const orderItemsPayload = input.items.map((cartItem) => {
-      const product = productBySlug.get(cartItem.productId)!;
-      const unitPrice = product.discount_price ?? product.price;
-
-      return {
-        order_id: orderId!,
-        product_id: product.id,
-        product_name_snapshot: product.name,
-        price_snapshot: unitPrice,
-        quantity: cartItem.quantity,
-      };
-    });
-
-    const { error: orderItemsError } = await supabase
-      .from("order_items")
-      .insert(orderItemsPayload);
-
-    if (orderItemsError) {
-      throw orderItemsError;
-    }
-
-    const uniqueProductIds = Array.from(
-      new Set(input.items.map((item) => productBySlug.get(item.productId)!.id))
-    );
-
-    for (const productId of uniqueProductIds) {
-      const { data: reserved, error: reserveError } = await supabase.rpc(
-        "reserve_product",
-        { p_product_id: productId, p_hours: 4 }
-      );
-
-      if (reserveError || reserved !== true) {
-        throw reserveError ?? new Error("One or more products could not be reserved");
-      }
-
-      reservedProductIds.push(productId);
-    }
-
-    return {
-      orderRef: order.orderRef,
-      totalAmount,
-      lineItems,
-    };
-  } catch (error) {
-    console.error("Cart checkout failed:", error);
-    await releaseReservedProducts(reservedProductIds);
-    await rollbackOrder({ customerId, orderId });
-    throw error;
+  if (productsError || !products) {
+    throw productsError ?? new Error("Failed to load products");
   }
+
+  // Expire stale reservations before attempting checkout
+  for (const product of products) {
+    await expireStaleReservation(product.id);
+  }
+
+  // Build lineItems from product data + cart quantities
+  const productBySlug = new Map(products.map((p) => [p.slug, p]));
+  const lineItems: CartCheckoutLineItem[] = [];
+
+  for (const cartItem of input.items) {
+    const product = productBySlug.get(cartItem.productId);
+    if (!product) {
+      throw new Error(`Product not found: ${cartItem.productId}`);
+    }
+    const unitPrice = Number(product.discount_price ?? product.price);
+    lineItems.push({
+      name: product.name,
+      quantity: cartItem.quantity,
+      unitPrice,
+    });
+  }
+
+  // Build the items array for the RPC
+  const rpcItems = input.items.map((item) => ({
+    slug: item.productId,
+    quantity: item.quantity,
+  }));
+
+  const { data, error } = await supabase.rpc("create_cart_order", {
+    p_items: rpcItems,
+    p_customer_name: input.customerName,
+    p_customer_phone: input.customerPhone,
+  });
+
+  if (error) {
+    console.error("create_cart_order RPC failed:", error);
+    throw new Error(error.message || "Cart checkout failed");
+  }
+
+  // The RPC returns a single row (or array with one element)
+  const row = Array.isArray(data) ? data[0] : data;
+
+  if (!row) {
+    throw new Error("Cart checkout returned no data");
+  }
+
+  return {
+    orderRef: row.order_ref,
+    totalAmount: Number(row.total_amount),
+    lineItems,
+  };
 }

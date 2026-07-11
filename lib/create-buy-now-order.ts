@@ -1,6 +1,4 @@
 import { supabase } from "@/lib/supabase";
-import { insertOrderWithRetry } from "@/lib/order-ref";
-import { rollbackOrder } from "@/lib/order-rollback";
 import { expireStaleReservation } from "@/lib/expire-reservations";
 
 interface BuyNowOrderInput {
@@ -18,86 +16,39 @@ interface BuyNowOrderResult {
 export async function createBuyNowOrder(
   input: BuyNowOrderInput
 ): Promise<BuyNowOrderResult> {
-  let customerId: string | null = null;
-  let orderId: string | null = null;
+  // Try to expire any stale reservation on this product first
+  // (uses a separate RPC, so it's fine if it's a no-op)
+  const { data: productLookup } = await supabase
+    .from("products")
+    .select("id")
+    .eq("slug", input.productSlug)
+    .single();
 
-  try {
-    const { data: product, error: productError } = await supabase
-      .from("products")
-      .select("id, name, price, discount_price, status")
-      .eq("slug", input.productSlug)
-      .single();
-
-    if (productError || !product) {
-      throw new Error(`Product not found: ${input.productSlug}`);
-    }
-
-    // Release this product's reservation if it has expired
-    await expireStaleReservation(product.id);
-
-    // Re-fetch status after potential expiry
-    const { data: freshProduct } = await supabase
-      .from("products")
-      .select("status")
-      .eq("id", product.id)
-      .single();
-
-    if (!freshProduct || freshProduct.status !== "available") {
-      throw new Error(`Product is not available: ${input.productSlug}`);
-    }
-
-    const salePrice = product.discount_price ?? product.price;
-
-    const { data: customer, error: customerError } = await supabase
-      .from("customers")
-      .insert({
-        name: input.customerName,
-        phone: input.customerPhone,
-      })
-      .select("id")
-      .single();
-
-    if (customerError || !customer) {
-      throw customerError ?? new Error("Failed to create customer");
-    }
-
-    customerId = customer.id;
-
-    const order = await insertOrderWithRetry({
-      customerId: customer.id,
-      totalAmount: salePrice,
-    });
-    orderId = order.orderId;
-
-    const { error: orderItemError } = await supabase.from("order_items").insert({
-      order_id: orderId,
-      product_id: product.id,
-      product_name_snapshot: product.name,
-      price_snapshot: salePrice,
-      quantity: 1,
-    });
-
-    if (orderItemError) {
-      throw orderItemError;
-    }
-
-    const { data: reserved, error: reserveError } = await supabase.rpc(
-      "reserve_product",
-      { p_product_id: product.id, p_hours: 4 }
-    );
-
-    if (reserveError || reserved !== true) {
-      throw reserveError ?? new Error("Product could not be reserved");
-    }
-
-    return {
-      orderRef: order.orderRef,
-      productName: product.name,
-      price: salePrice,
-    };
-  } catch (error) {
-    console.error("Buy now order failed:", error);
-    await rollbackOrder({ customerId, orderId });
-    throw error;
+  if (productLookup) {
+    await expireStaleReservation(productLookup.id);
   }
+
+  const { data, error } = await supabase.rpc("create_buy_now_order", {
+    p_product_slug: input.productSlug,
+    p_customer_name: input.customerName,
+    p_customer_phone: input.customerPhone,
+  });
+
+  if (error) {
+    console.error("create_buy_now_order RPC failed:", error);
+    throw new Error(error.message || "Buy now order failed");
+  }
+
+  // The RPC returns a single row (or array with one element)
+  const row = Array.isArray(data) ? data[0] : data;
+
+  if (!row) {
+    throw new Error("Buy now order returned no data");
+  }
+
+  return {
+    orderRef: row.order_ref,
+    productName: row.product_name,
+    price: Number(row.price),
+  };
 }
