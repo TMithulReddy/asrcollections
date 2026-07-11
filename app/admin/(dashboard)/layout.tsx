@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
+import SidebarNav from "@/components/admin/SidebarNav";
 
 export default async function AdminLayout({
   children,
@@ -9,34 +10,18 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen bg-brand-blush">
+    <div className="flex h-screen bg-brand-white">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-brand-rose/20 flex flex-col">
+      <aside className="w-56 bg-brand-plum border-r border-brand-rose/20 flex flex-col">
         <div className="p-6">
-          <Link href="/admin/dashboard" className="text-xl font-bold text-brand-plum">
+          <Link href="/admin/dashboard" className="text-xl font-heading text-brand-white">
             ASR Admin
           </Link>
         </div>
         
-        <nav className="flex-1 px-4 py-4 space-y-2">
-          <Link href="/admin/products" className="block px-4 py-2 text-brand-plum hover:bg-brand-blushDark rounded-md transition-colors">
-            Products
-          </Link>
-          <Link href="/admin/categories" className="block px-4 py-2 text-brand-plum hover:bg-brand-blushDark rounded-md transition-colors">
-            Categories
-          </Link>
-          <Link href="/admin/orders" className="block px-4 py-2 text-brand-plum hover:bg-brand-blushDark rounded-md transition-colors">
-            Orders
-          </Link>
-          <Link href="/admin/promotions" className="block px-4 py-2 text-brand-plum hover:bg-brand-blushDark rounded-md transition-colors">
-            Promotions
-          </Link>
-          <Link href="/admin/banners" className="block px-4 py-2 text-brand-plum hover:bg-brand-blushDark rounded-md transition-colors">
-            Banners
-          </Link>
-        </nav>
+        <SidebarNav />
 
-        <div className="p-4 border-t border-brand-rose/20">
+        <div className="p-4 border-t border-brand-blush/20">
           <form action={async () => {
             "use server";
             const supabase = createClient();
@@ -45,7 +30,7 @@ export default async function AdminLayout({
           }}>
             <button
               type="submit"
-              className="flex items-center w-full px-4 py-2 text-brand-plum hover:bg-brand-rose/10 rounded-md transition-colors"
+              className="flex items-center w-full px-4 py-2 text-brand-blush border border-brand-blush/20 hover:bg-brand-mauve/20 rounded-md transition-colors"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
@@ -55,7 +40,7 @@ export default async function AdminLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto p-8">
+      <main className="flex-1 overflow-auto p-8 bg-brand-blush">
         {children}
       </main>
     </div>
