@@ -131,26 +131,17 @@ export async function createCartOrder(
       throw orderItemsError;
     }
 
-    const reservedUntil = new Date(
-      Date.now() + 4 * 60 * 60 * 1000
-    ).toISOString();
-
     const uniqueProductIds = Array.from(
       new Set(input.items.map((item) => productBySlug.get(item.productId)!.id))
     );
 
     for (const productId of uniqueProductIds) {
-      const { data: reservedProduct, error: reserveError } = await supabase
-        .from("products")
-        .update({
-          status: "reserved",
-          reserved_until: reservedUntil,
-        })
-        .eq("id", productId)
-        .eq("status", "available")
-        .select("id");
+      const { data: reserved, error: reserveError } = await supabase.rpc(
+        "reserve_product",
+        { p_product_id: productId, p_hours: 4 }
+      );
 
-      if (reserveError || !reservedProduct?.length) {
+      if (reserveError || reserved !== true) {
         throw reserveError ?? new Error("One or more products could not be reserved");
       }
 

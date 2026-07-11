@@ -81,21 +81,12 @@ export async function createBuyNowOrder(
       throw orderItemError;
     }
 
-    const reservedUntil = new Date(
-      Date.now() + 4 * 60 * 60 * 1000
-    ).toISOString();
+    const { data: reserved, error: reserveError } = await supabase.rpc(
+      "reserve_product",
+      { p_product_id: product.id, p_hours: 4 }
+    );
 
-    const { data: reservedProduct, error: reserveError } = await supabase
-      .from("products")
-      .update({
-        status: "reserved",
-        reserved_until: reservedUntil,
-      })
-      .eq("id", product.id)
-      .eq("status", "available")
-      .select("id");
-
-    if (reserveError || !reservedProduct?.length) {
+    if (reserveError || reserved !== true) {
       throw reserveError ?? new Error("Product could not be reserved");
     }
 

@@ -44,12 +44,13 @@ export async function releaseReservedProducts(productIds: string[]) {
     return;
   }
 
-  const { error } = await supabase
-    .from("products")
-    .update({ status: "available", reserved_until: null })
-    .in("id", productIds);
+  for (const productId of productIds) {
+    const { error } = await supabase.rpc("expire_reservation", {
+      p_product_id: productId,
+    });
 
-  if (error) {
-    console.error("Failed to release reserved products:", error);
+    if (error) {
+      console.error(`Failed to release reserved product ${productId}:`, error);
+    }
   }
 }
