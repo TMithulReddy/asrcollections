@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Plus } from "lucide-react";
 import ProductListActions from "@/components/admin/ProductListActions";
+import { getImageUrl } from "@/lib/cloudinary";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +75,7 @@ export default async function AdminProductsPage() {
                         <div className="relative w-12 h-16 bg-brand-blush rounded-md overflow-hidden flex-shrink-0">
                           {firstImage ? (
                             <Image
-                              src={`https://res.cloudinary.com/dtsdbtsm8/image/upload/c_fill,w_100,h_133,q_auto,f_auto/${firstImage}`}
+                              src={getImageUrl(firstImage, 100)}
                               alt={product.name}
                               fill
                               className="object-cover"
