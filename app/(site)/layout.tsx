@@ -19,6 +19,7 @@ const footerLinks = [
   { href: "/contact", label: "Contact" },
   { href: "/shipping-policy", label: "Shipping Policy" },
   { href: "/return-policy", label: "Return Policy" },
+  { href: "/admin/login", label: "Login" },
 ];
 
 export default function SiteLayout({
