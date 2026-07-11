@@ -2,11 +2,14 @@ import Link from "next/link";
 import { Heart, Search } from "lucide-react";
 import CartNavLink from "@/components/ui/CartNavLink";
 import MobileNav from "@/components/ui/MobileNav";
+import SearchBar from "@/components/ui/SearchBar";
+import FavoritesNavLink from "@/components/ui/FavoritesNavLink";
 import { CartProvider } from "@/lib/cart-context";
+import { FavoritesProvider } from "@/lib/favorites-context";
 
 const navLinks = [
-  { href: "/category/saree", label: "Sarees" },
-  { href: "/#new-arrivals", label: "New Arrivals" },
+  { href: "/sarees", label: "Sarees" },
+  { href: "/sarees", label: "New Arrivals" },
   { href: "/category/wedding-edit", label: "Wedding Edit" },
   { href: "/category/sale", label: "Sale" },
 ];
@@ -25,74 +28,73 @@ export default function SiteLayout({
 }) {
   return (
     <CartProvider>
-      <div className="flex min-h-screen flex-col bg-brand-white">
-        <header className="sticky top-0 z-50 border-b border-brand-blushDark bg-brand-white">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-            {/* Logo */}
-            <Link
-              href="/"
-              className="font-heading text-xl text-brand-plum"
-            >
-              ASR Collections
-            </Link>
+      <FavoritesProvider>
+        <div className="flex min-h-screen flex-col bg-brand-white">
+          <header className="sticky top-0 z-50 border-b border-brand-blushDark bg-brand-white">
+            <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+              {/* Logo */}
+              <Link
+                href="/"
+                className="font-heading text-xl text-brand-plum"
+              >
+                ASR Collections
+              </Link>
 
-            {/* Desktop nav links — hidden on mobile */}
-            <nav
-              aria-label="Main navigation"
-              className="hidden md:flex md:items-center md:gap-7"
-            >
-              {navLinks.map(({ href, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="text-sm font-medium text-brand-plum transition-colors hover:text-brand-mauve"
-                >
-                  {label}
-                </Link>
-              ))}
-            </nav>
-
-            {/* Icon row + hamburger */}
-            <div className="flex items-center gap-4 text-brand-plum sm:gap-5">
-              {/* Hamburger — mobile only, rendered by client component */}
-              <MobileNav />
-
-              <button type="button" aria-label="Search" className="p-1">
-                <Search className="h-5 w-5" strokeWidth={1.75} />
-              </button>
-              <button type="button" aria-label="Wishlist" className="p-1">
-                <Heart className="h-5 w-5" strokeWidth={1.75} />
-              </button>
-              <CartNavLink />
-            </div>
-          </div>
-        </header>
-
-        <main className="flex-1">{children}</main>
-
-        <footer className="bg-brand-plum text-brand-blush">
-          <div className="mx-auto max-w-6xl px-4 py-10">
-            <p className="font-heading text-lg">ASR Collections</p>
-
-            <ul className="mt-6 flex flex-col gap-3 text-sm sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-3">
-              {footerLinks.map((link) => (
-                <li key={link.href}>
+              {/* Desktop nav links — hidden on mobile */}
+              <nav
+                aria-label="Main navigation"
+                className="hidden md:flex md:items-center md:gap-7"
+              >
+                {navLinks.map(({ href, label }) => (
                   <Link
-                    href={link.href}
-                    className="transition-opacity hover:opacity-80"
+                    key={href}
+                    href={href}
+                    className="text-sm font-medium text-brand-plum transition-colors hover:text-brand-mauve"
                   >
-                    {link.label}
+                    {label}
                   </Link>
-                </li>
-              ))}
-            </ul>
+                ))}
+              </nav>
 
-            <p className="mt-8 border-t border-brand-rose/30 pt-6 text-xs text-brand-blush/60">
-              © {new Date().getFullYear()} ASR Collections. All rights reserved.
-            </p>
-          </div>
-        </footer>
-      </div>
+              {/* Icon row + hamburger */}
+              <div className="flex items-center gap-4 text-brand-plum sm:gap-5">
+                {/* Hamburger — mobile only, rendered by client component */}
+                <MobileNav />
+
+                <SearchBar />
+                
+                <FavoritesNavLink />
+                <CartNavLink />
+              </div>
+            </div>
+          </header>
+
+          <main className="flex-1">{children}</main>
+
+          <footer className="bg-brand-plum text-brand-blush">
+            <div className="mx-auto max-w-6xl px-4 py-10">
+              <p className="font-heading text-lg">ASR Collections</p>
+
+              <ul className="mt-6 flex flex-col gap-3 text-sm sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-3">
+                {footerLinks.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="transition-opacity hover:opacity-80"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+
+              <p className="mt-8 border-t border-brand-rose/30 pt-6 text-xs text-brand-blush/60">
+                © {new Date().getFullYear()} ASR Collections. All rights reserved.
+              </p>
+            </div>
+          </footer>
+        </div>
+      </FavoritesProvider>
     </CartProvider>
   );
 }

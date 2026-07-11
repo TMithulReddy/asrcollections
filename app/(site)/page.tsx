@@ -36,9 +36,10 @@ export default async function HomePage() {
     const imageUrl = sortedImages.length > 0 ? sortedImages[0].image_url : "";
 
     return {
+      slug: product.slug,
       name: product.name,
       price: product.price,
-      discountPrice: product.discount_price,
+      discountPrice: product.discount_price !== null ? product.discount_price : undefined,
       status: product.status as "available" | "reserved" | "sold",
       image: imageUrl,
     };

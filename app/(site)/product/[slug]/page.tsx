@@ -80,9 +80,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
       (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
     );
     return {
+      slug: related.slug,
       name: related.name,
       price: related.price,
-      discountPrice: related.discount_price,
+      discountPrice: related.discount_price !== null ? related.discount_price : undefined,
       status: related.status as ProductStatus,
       image: rSorted.length > 0 ? rSorted[0].image_url : "",
     };

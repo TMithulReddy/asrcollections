@@ -5,8 +5,8 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
 const navLinks = [
-  { href: "/category/saree", label: "Sarees" },
-  { href: "/#new-arrivals", label: "New Arrivals" },
+  { href: "/sarees", label: "Sarees" },
+  { href: "/sarees", label: "New Arrivals" },
   { href: "/category/wedding-edit", label: "Wedding Edit" },
   { href: "/category/sale", label: "Sale" },
 ];
