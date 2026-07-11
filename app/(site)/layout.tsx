@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Heart, Search } from "lucide-react";
+
 import CartNavLink from "@/components/ui/CartNavLink";
 import MobileNav from "@/components/ui/MobileNav";
 import SearchBar from "@/components/ui/SearchBar";
@@ -11,7 +11,7 @@ const navLinks = [
   { href: "/sarees", label: "Sarees" },
   { href: "/sarees", label: "New Arrivals" },
   { href: "/category/wedding-edit", label: "Wedding Edit" },
-  { href: "/category/sale", label: "Sale" },
+  { href: "/sarees", label: "Sale" },
 ];
 
 const footerLinks = [

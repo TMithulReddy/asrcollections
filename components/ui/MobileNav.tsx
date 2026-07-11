@@ -8,7 +8,7 @@ const navLinks = [
   { href: "/sarees", label: "Sarees" },
   { href: "/sarees", label: "New Arrivals" },
   { href: "/category/wedding-edit", label: "Wedding Edit" },
-  { href: "/category/sale", label: "Sale" },
+  { href: "/sarees", label: "Sale" },
 ];
 
 export default function MobileNav() {

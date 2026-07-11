@@ -67,7 +67,7 @@ export default async function AllSareesPage({ searchParams }: AllSareesPageProps
     });
   }
 
-  let allProducts: ProductCardItem[] = filteredProducts.map((product) => {
+  const allProducts: ProductCardItem[] = filteredProducts.map((product) => {
     const sortedImages = [...(product.product_images || [])].sort(
       (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
     );
