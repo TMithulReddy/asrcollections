@@ -3,6 +3,7 @@ import { Gem, Heart, Leaf, Sparkles } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ProductCard from "@/components/ui/ProductCard";
 import { supabase } from "@/lib/supabase";
+import { expireAllStaleReservations } from "@/lib/expire-reservations";
 
 const categoryIcons: Record<string, React.ElementType> = {
   kanjivaram: Sparkles,
@@ -12,6 +13,9 @@ const categoryIcons: Record<string, React.ElementType> = {
 };
 
 export default async function HomePage() {
+  // Release any expired reservations before querying
+  await expireAllStaleReservations();
+
   const { data: categories } = await supabase
     .from("categories")
     .select("*")

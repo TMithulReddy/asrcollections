@@ -2,6 +2,7 @@ import CategoryEmptyState from "@/components/ui/CategoryEmptyState";
 import CategoryFilterBar from "@/components/ui/CategoryFilterBar";
 import ProductCard from "@/components/ui/ProductCard";
 import { supabase } from "@/lib/supabase";
+import { expireAllStaleReservations } from "@/lib/expire-reservations";
 import { Suspense } from "react";
 
 type ProductStatus = "available" | "reserved" | "sold";
@@ -20,6 +21,9 @@ interface AllSareesPageProps {
 }
 
 export default async function AllSareesPage({ searchParams }: AllSareesPageProps) {
+  // Release any expired reservations before querying
+  await expireAllStaleReservations();
+
   const { data: products } = await supabase
     .from("products")
     .select(`

@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { insertOrderWithRetry } from "@/lib/order-ref";
 import { releaseReservedProducts, rollbackOrder } from "@/lib/order-rollback";
+import { expireStaleReservation } from "@/lib/expire-reservations";
 
 export interface CartCheckoutItem {
   productId: string;
@@ -48,7 +49,22 @@ export async function createCartOrder(
       throw productsError ?? new Error("Failed to load products");
     }
 
-    const productBySlug = new Map(products.map((product) => [product.slug, product]));
+    // Expire stale reservations for all products in the cart
+    for (const product of products) {
+      await expireStaleReservation(product.id);
+    }
+
+    // Re-fetch products after potential expiry to get fresh statuses
+    const { data: freshProducts, error: freshError } = await supabase
+      .from("products")
+      .select("id, slug, name, price, discount_price, status")
+      .in("slug", slugs);
+
+    if (freshError || !freshProducts) {
+      throw freshError ?? new Error("Failed to reload products");
+    }
+
+    const productBySlug = new Map(freshProducts.map((product) => [product.slug, product]));
     const lineItems: CartCheckoutLineItem[] = [];
     let totalAmount = 0;
 

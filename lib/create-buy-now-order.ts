@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { insertOrderWithRetry } from "@/lib/order-ref";
 import { rollbackOrder } from "@/lib/order-rollback";
+import { expireStaleReservation } from "@/lib/expire-reservations";
 
 interface BuyNowOrderInput {
   productSlug: string;
@@ -31,7 +32,17 @@ export async function createBuyNowOrder(
       throw new Error(`Product not found: ${input.productSlug}`);
     }
 
-    if (product.status !== "available") {
+    // Release this product's reservation if it has expired
+    await expireStaleReservation(product.id);
+
+    // Re-fetch status after potential expiry
+    const { data: freshProduct } = await supabase
+      .from("products")
+      .select("status")
+      .eq("id", product.id)
+      .single();
+
+    if (!freshProduct || freshProduct.status !== "available") {
       throw new Error(`Product is not available: ${input.productSlug}`);
     }
 
