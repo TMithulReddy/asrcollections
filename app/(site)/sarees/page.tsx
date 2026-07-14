@@ -22,25 +22,28 @@ interface AllSareesPageProps {
 }
 
 export default async function AllSareesPage({ searchParams }: AllSareesPageProps) {
-  // Release any expired reservations before querying
-  await expireAllStaleReservations();
+  // Fire-and-forget: clean up expired reservations without blocking render
+  expireAllStaleReservations();
 
-  const { data: products } = await supabase
-    .from("products")
-    .select(`
-      *,
-      product_images (
-        image_url,
-        display_order
-      )
-    `)
-    .order("created_at", { ascending: false });
-
-  // Fetch active promotions
-  const { data: promotions } = await supabase
-    .from("promotions")
-    .select("*")
-    .eq("active", true);
+  const [
+    { data: products },
+    { data: promotions },
+  ] = await Promise.all([
+    supabase
+      .from("products")
+      .select(`
+        *,
+        product_images (
+          image_url,
+          display_order
+        )
+      `)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("promotions")
+      .select("*")
+      .eq("active", true),
+  ]);
 
   const activePromotions: Promotion[] = (promotions || []) as Promotion[];
 

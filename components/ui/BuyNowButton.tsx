@@ -102,7 +102,11 @@ export default function BuyNowButton({
         customerPhone: validation.normalizedPhone,
       });
 
-      window.location.assign(buildWhatsAppUrl(whatsappNumber, message));
+      const whatsappUrl = buildWhatsAppUrl(whatsappNumber, message);
+      const newWindow = window.open(whatsappUrl, "_blank");
+      if (!newWindow) {
+        window.location.href = whatsappUrl;
+      }
 
       setOrderRef(data.orderRef);
       setStep("success");

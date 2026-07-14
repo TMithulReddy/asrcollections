@@ -32,20 +32,23 @@ interface CategoryPageProps {
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
   const categoryName = slugToTitle(params.slug);
 
-  // Release any expired reservations before querying
-  await expireAllStaleReservations();
+  // Fire-and-forget: clean up expired reservations without blocking render
+  expireAllStaleReservations();
 
-  const { data: categoryData } = await supabase
-    .from("categories")
-    .select("id")
-    .eq("slug", params.slug)
-    .single();
-
-  // Fetch active promotions
-  const { data: promotions } = await supabase
-    .from("promotions")
-    .select("*")
-    .eq("active", true);
+  const [
+    { data: categoryData },
+    { data: promotions },
+  ] = await Promise.all([
+    supabase
+      .from("categories")
+      .select("id")
+      .eq("slug", params.slug)
+      .single(),
+    supabase
+      .from("promotions")
+      .select("*")
+      .eq("active", true),
+  ]);
 
   const activePromotions: Promotion[] = (promotions || []) as Promotion[];
 
