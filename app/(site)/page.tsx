@@ -16,17 +16,42 @@ const categoryIcons: Record<string, React.ElementType> = {
 };
 
 export default async function HomePage() {
-  // Release any expired reservations before querying
-  await expireAllStaleReservations();
+  // Fire-and-forget: clean up expired reservations without blocking render
+  expireAllStaleReservations();
 
   const today = new Date().toISOString().slice(0, 10);
 
-  // Fetch active banner: active = true, within date range (or no dates set)
-  const { data: banners } = await supabase
-    .from("banners")
-    .select("*")
-    .eq("active", true)
-    .order("display_order", { ascending: true });
+  // Fetch all data in parallel for faster page loads
+  const [
+    { data: banners },
+    { data: categories },
+    { data: products },
+    { data: promotions },
+  ] = await Promise.all([
+    supabase
+      .from("banners")
+      .select("*")
+      .eq("active", true)
+      .order("display_order", { ascending: true }),
+    supabase
+      .from("categories")
+      .select("*")
+      .order("display_order", { ascending: true }),
+    supabase
+      .from("products")
+      .select(`
+        *,
+        product_images (
+          image_url,
+          display_order
+        )
+      `)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("promotions")
+      .select("*")
+      .eq("active", true),
+  ]);
 
   // Filter banners by date range in JS (Supabase doesn't easily handle
   // "null OR >= today" in a single .or())
@@ -35,28 +60,6 @@ export default async function HomePage() {
     if (banner.end_date && today > banner.end_date) return false;
     return true;
   });
-
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("*")
-    .order("display_order", { ascending: true });
-
-  const { data: products } = await supabase
-    .from("products")
-    .select(`
-      *,
-      product_images (
-        image_url,
-        display_order
-      )
-    `)
-    .order("created_at", { ascending: false });
-
-  // Fetch active promotions
-  const { data: promotions } = await supabase
-    .from("promotions")
-    .select("*")
-    .eq("active", true);
 
   const activePromotions: Promotion[] = (promotions || []) as Promotion[];
 
