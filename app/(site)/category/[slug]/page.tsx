@@ -3,6 +3,7 @@ import CategoryFilterBar from "@/components/ui/CategoryFilterBar";
 import ProductCard from "@/components/ui/ProductCard";
 import { supabase } from "@/lib/supabase";
 import { expireAllStaleReservations } from "@/lib/expire-reservations";
+import { getEffectivePrice, type Promotion } from "@/lib/get-effective-price";
 import { Suspense } from "react";
 
 type ProductStatus = "available" | "reserved" | "sold";
@@ -40,6 +41,14 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     .eq("slug", params.slug)
     .single();
 
+  // Fetch active promotions
+  const { data: promotions } = await supabase
+    .from("promotions")
+    .select("*")
+    .eq("active", true);
+
+  const activePromotions: Promotion[] = (promotions || []) as Promotion[];
+
   let categoryProducts: ProductCardItem[] = [];
   if (categoryData) {
     const { data: products } = await supabase
@@ -64,7 +73,11 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
     if (typeof searchParams.price === "string" && searchParams.price) {
       filteredProducts = filteredProducts.filter((p) => {
-        const activePrice = p.discount_price !== null ? p.discount_price : p.price;
+        const effectiveDiscount = getEffectivePrice(
+          { id: p.id, price: p.price, discount_price: p.discount_price, category_id: p.category_id },
+          activePromotions
+        );
+        const activePrice = effectiveDiscount ?? p.price;
         switch (searchParams.price) {
           case "0-5000": return activePrice < 5000;
           case "5000-10000": return activePrice >= 5000 && activePrice <= 10000;
@@ -78,14 +91,26 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     const sort = typeof searchParams.sort === "string" ? searchParams.sort : "newest";
     if (sort === "price-asc") {
       filteredProducts.sort((a, b) => {
-        const priceA = a.discount_price !== null ? a.discount_price : a.price;
-        const priceB = b.discount_price !== null ? b.discount_price : b.price;
+        const priceA = getEffectivePrice(
+          { id: a.id, price: a.price, discount_price: a.discount_price, category_id: a.category_id },
+          activePromotions
+        ) ?? a.price;
+        const priceB = getEffectivePrice(
+          { id: b.id, price: b.price, discount_price: b.discount_price, category_id: b.category_id },
+          activePromotions
+        ) ?? b.price;
         return priceA - priceB;
       });
     } else if (sort === "price-desc") {
       filteredProducts.sort((a, b) => {
-        const priceA = a.discount_price !== null ? a.discount_price : a.price;
-        const priceB = b.discount_price !== null ? b.discount_price : b.price;
+        const priceA = getEffectivePrice(
+          { id: a.id, price: a.price, discount_price: a.discount_price, category_id: a.category_id },
+          activePromotions
+        ) ?? a.price;
+        const priceB = getEffectivePrice(
+          { id: b.id, price: b.price, discount_price: b.discount_price, category_id: b.category_id },
+          activePromotions
+        ) ?? b.price;
         return priceB - priceA;
       });
     }
@@ -96,11 +121,21 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       );
       const imageUrl = sortedImages.length > 0 ? sortedImages[0].image_url : "";
 
+      const effectiveDiscount = getEffectivePrice(
+        {
+          id: product.id,
+          price: product.price,
+          discount_price: product.discount_price,
+          category_id: product.category_id,
+        },
+        activePromotions
+      );
+
       return {
         slug: product.slug,
         name: product.name,
         price: product.price,
-        discountPrice: product.discount_price !== null ? product.discount_price : undefined,
+        discountPrice: effectiveDiscount,
         status: product.status as "available" | "reserved" | "sold",
         image: imageUrl,
       };

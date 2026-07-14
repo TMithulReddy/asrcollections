@@ -1,9 +1,12 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Gem, Heart, Leaf, Sparkles } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ProductCard from "@/components/ui/ProductCard";
 import { supabase } from "@/lib/supabase";
 import { expireAllStaleReservations } from "@/lib/expire-reservations";
+import { getEffectivePrice, type Promotion } from "@/lib/get-effective-price";
+import { getImageUrl } from "@/lib/cloudinary";
 
 const categoryIcons: Record<string, React.ElementType> = {
   kanjivaram: Sparkles,
@@ -15,6 +18,23 @@ const categoryIcons: Record<string, React.ElementType> = {
 export default async function HomePage() {
   // Release any expired reservations before querying
   await expireAllStaleReservations();
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Fetch active banner: active = true, within date range (or no dates set)
+  const { data: banners } = await supabase
+    .from("banners")
+    .select("*")
+    .eq("active", true)
+    .order("display_order", { ascending: true });
+
+  // Filter banners by date range in JS (Supabase doesn't easily handle
+  // "null OR >= today" in a single .or())
+  const activeBanner = (banners || []).find((banner) => {
+    if (banner.start_date && today < banner.start_date) return false;
+    if (banner.end_date && today > banner.end_date) return false;
+    return true;
+  });
 
   const { data: categories } = await supabase
     .from("categories")
@@ -32,6 +52,14 @@ export default async function HomePage() {
     `)
     .order("created_at", { ascending: false });
 
+  // Fetch active promotions
+  const { data: promotions } = await supabase
+    .from("promotions")
+    .select("*")
+    .eq("active", true);
+
+  const activePromotions: Promotion[] = (promotions || []) as Promotion[];
+
   const newArrivals = (products || []).map((product) => {
     // Sort images by display_order
     const sortedImages = [...(product.product_images || [])].sort(
@@ -39,11 +67,21 @@ export default async function HomePage() {
     );
     const imageUrl = sortedImages.length > 0 ? sortedImages[0].image_url : "";
 
+    const effectiveDiscount = getEffectivePrice(
+      {
+        id: product.id,
+        price: product.price,
+        discount_price: product.discount_price,
+        category_id: product.category_id,
+      },
+      activePromotions
+    );
+
     return {
       slug: product.slug,
       name: product.name,
       price: product.price,
-      discountPrice: product.discount_price !== null ? product.discount_price : undefined,
+      discountPrice: effectiveDiscount,
       status: product.status as "available" | "reserved" | "sold",
       image: imageUrl,
     };
@@ -51,20 +89,64 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Hero */}
-      <section className="w-full bg-brand-plumSoft px-4 py-16 text-center sm:py-20">
-        <h1 className="font-heading text-3xl text-brand-blush sm:text-4xl">
-          Woven with elegance
-        </h1>
-        <p className="mx-auto mt-3 max-w-md text-sm font-light text-brand-rose sm:text-base">
-          Handpicked sarees crafted in silk, zari, and timeless tradition
-        </p>
-        <div className="mt-8">
-          <Button variant="primary" href="/category">
-            Explore new arrivals
-          </Button>
-        </div>
-      </section>
+      {/* Hero — dynamic banner or static fallback */}
+      {activeBanner ? (
+        <section className="w-full relative">
+          {activeBanner.link_url ? (
+            <Link href={activeBanner.link_url} className="block w-full">
+              <div className="relative w-full" style={{ aspectRatio: "16/5" }}>
+                <Image
+                  src={getImageUrl(activeBanner.image_url, 1400)}
+                  alt={activeBanner.title}
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="100vw"
+                />
+                {/* Gradient overlay for text readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 px-6 py-8 sm:px-10 sm:py-12">
+                  <h1 className="font-heading text-2xl text-white sm:text-4xl drop-shadow-lg">
+                    {activeBanner.title}
+                  </h1>
+                </div>
+              </div>
+            </Link>
+          ) : (
+            <div className="relative w-full" style={{ aspectRatio: "16/5" }}>
+              <Image
+                src={getImageUrl(activeBanner.image_url, 1400)}
+                alt={activeBanner.title}
+                fill
+                className="object-cover"
+                priority
+                sizes="100vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 px-6 py-8 sm:px-10 sm:py-12">
+                <h1 className="font-heading text-2xl text-white sm:text-4xl drop-shadow-lg">
+                  {activeBanner.title}
+                </h1>
+              </div>
+            </div>
+          )}
+        </section>
+      ) : (
+        /* Static fallback hero */
+        <section className="w-full bg-brand-plumSoft px-4 py-16 text-center sm:py-20">
+          <h1 className="font-heading text-3xl text-brand-blush sm:text-4xl">
+            Woven with elegance
+          </h1>
+          <p className="mx-auto mt-3 max-w-md text-sm font-light text-brand-rose sm:text-base">
+            Handpicked sarees crafted in silk, zari, and timeless tradition
+          </p>
+          <div className="mt-8">
+            <Button variant="primary" href="/category">
+              Explore new arrivals
+            </Button>
+          </div>
+        </section>
+      )}
 
       {/* Category tiles — white background */}
       <section className="w-full bg-brand-white">

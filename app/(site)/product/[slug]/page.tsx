@@ -4,6 +4,7 @@ import ProductCard from "@/components/ui/ProductCard";
 import ProductGallery from "@/components/ui/ProductGallery";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { getEffectivePrice, type Promotion } from "@/lib/get-effective-price";
 
 type ProductStatus = "available" | "reserved" | "sold";
 
@@ -58,6 +59,25 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 
+  // Fetch active promotions
+  const { data: promotions } = await supabase
+    .from("promotions")
+    .select("*")
+    .eq("active", true);
+
+  const activePromotions: Promotion[] = (promotions || []) as Promotion[];
+
+  // Get effective discount price for this product
+  const effectiveDiscount = getEffectivePrice(
+    {
+      id: product.id,
+      price: product.price,
+      discount_price: product.discount_price,
+      category_id: product.category_id,
+    },
+    activePromotions
+  );
+
   const sortedImages = [...(product.product_images || [])]
     .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
     .map((img) => img.image_url);
@@ -79,11 +99,22 @@ export default async function ProductPage({ params }: ProductPageProps) {
     const rSorted = [...(related.product_images || [])].sort(
       (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
     );
+
+    const relatedDiscount = getEffectivePrice(
+      {
+        id: related.id,
+        price: related.price,
+        discount_price: related.discount_price,
+        category_id: related.category_id,
+      },
+      activePromotions
+    );
+
     return {
       slug: related.slug,
       name: related.name,
       price: related.price,
-      discountPrice: related.discount_price !== null ? related.discount_price : undefined,
+      discountPrice: relatedDiscount,
       status: related.status as ProductStatus,
       image: rSorted.length > 0 ? rSorted[0].image_url : "",
     };
@@ -113,13 +144,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </h1>
 
           <div className="mt-4 flex flex-wrap items-baseline gap-2">
-            {product.discount_price !== null && product.discount_price !== undefined ? (
+            {effectiveDiscount != null ? (
               <>
                 <span className="text-lg text-brand-rose line-through">
                   {formatPrice(product.price)}
                 </span>
                 <span className="text-xl font-bold text-brand-plum">
-                  {formatPrice(product.discount_price)}
+                  {formatPrice(effectiveDiscount)}
                 </span>
               </>
             ) : (
@@ -147,8 +178,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
               name={product.name}
               price={Number(product.price)}
               discountPrice={
-                product.discount_price !== null && product.discount_price !== undefined
-                  ? Number(product.discount_price)
+                effectiveDiscount != null
+                  ? Number(effectiveDiscount)
                   : undefined
               }
               image={sortedImages[0] || ""}
