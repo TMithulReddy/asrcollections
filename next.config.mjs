@@ -5,6 +5,9 @@ const nextConfig = {
       { protocol: "https", hostname: "res.cloudinary.com" },
     ],
   },
+  devIndicators: {
+    buildActivity: false,
+  },
 };
 
 export default nextConfig;
