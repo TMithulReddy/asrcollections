@@ -28,6 +28,7 @@ export default async function AllSareesPage({ searchParams }: AllSareesPageProps
   const [
     { data: products },
     { data: promotions },
+    { data: categories },
   ] = await Promise.all([
     supabase
       .from("products")
@@ -43,11 +44,30 @@ export default async function AllSareesPage({ searchParams }: AllSareesPageProps
       .from("promotions")
       .select("*")
       .eq("active", true),
+    supabase
+      .from("categories")
+      .select("id, name, slug")
+      .order("display_order", { ascending: true })
   ]);
 
   const activePromotions: Promotion[] = (promotions || []) as Promotion[];
 
   let filteredProducts = products || [];
+
+  const rawFabrics = filteredProducts
+    .map(p => p.fabric_type)
+    .filter((f): f is string => Boolean(f && f.trim() !== ""));
+    
+  const fabrics = Array.from(new Set(
+    rawFabrics.map(f => f.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '))
+  )).sort();
+
+  if (typeof searchParams.category === "string" && searchParams.category) {
+    const targetCat = categories?.find(c => c.slug === searchParams.category);
+    if (targetCat) {
+      filteredProducts = filteredProducts.filter((p) => p.category_id === targetCat.id);
+    }
+  }
 
   if (typeof searchParams.fabric === "string" && searchParams.fabric) {
     filteredProducts = filteredProducts.filter((p) =>
@@ -140,7 +160,10 @@ export default async function AllSareesPage({ searchParams }: AllSareesPageProps
 
       <div className="mt-6">
         <Suspense fallback={<div className="h-10 bg-brand-blush animate-pulse rounded-lg" />}>
-          <CategoryFilterBar />
+          <CategoryFilterBar 
+            categories={categories || []} 
+            fabrics={fabrics} 
+          />
         </Suspense>
       </div>
 

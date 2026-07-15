@@ -51,6 +51,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const [
     { data: categoryData },
     { data: promotions },
+    { data: categories },
   ] = await Promise.all([
     supabase
       .from("categories")
@@ -61,11 +62,17 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       .from("promotions")
       .select("*")
       .eq("active", true),
+    supabase
+      .from("categories")
+      .select("id, name, slug")
+      .order("display_order", { ascending: true })
   ]);
 
   const activePromotions: Promotion[] = (promotions || []) as Promotion[];
 
   let categoryProducts: ProductCardItem[] = [];
+  let fabrics: string[] = [];
+  
   if (categoryData) {
     const { data: products } = await supabase
       .from("products")
@@ -80,6 +87,14 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       .order("created_at", { ascending: false });
 
     let filteredProducts = products || [];
+
+    const rawFabrics = filteredProducts
+      .map(p => p.fabric_type)
+      .filter((f): f is string => Boolean(f && f.trim() !== ""));
+      
+    fabrics = Array.from(new Set(
+      rawFabrics.map(f => f.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '))
+    )).sort();
 
     if (typeof searchParams.fabric === "string" && searchParams.fabric) {
       filteredProducts = filteredProducts.filter((p) =>
@@ -159,7 +174,6 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   }
 
   const isEmpty = categoryProducts.length === 0;
-
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <header>
@@ -173,7 +187,11 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
       <div className="mt-6">
         <Suspense fallback={<div className="h-10 bg-brand-blush animate-pulse rounded-lg" />}>
-          <CategoryFilterBar />
+          <CategoryFilterBar 
+            categories={categories || []} 
+            fabrics={fabrics} 
+            currentCategorySlug={params.slug}
+          />
         </Suspense>
       </div>
 
