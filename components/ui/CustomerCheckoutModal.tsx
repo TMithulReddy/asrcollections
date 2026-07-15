@@ -1,6 +1,7 @@
 import { FormEvent, ReactNode } from "react";
 import { X } from "lucide-react";
 import Button from "@/components/ui/Button";
+import BorderMotif from "@/components/ui/BorderMotif";
 
 interface CustomerCheckoutModalProps {
   isOpen: boolean;
@@ -48,12 +49,14 @@ export default function CustomerCheckoutModal({
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-brand-plum/40 p-4 sm:items-center">
           <div
-            className="w-full max-w-md rounded-lg bg-brand-white p-6"
+            className="w-full max-w-md rounded-lg bg-brand-white p-6 relative overflow-hidden"
             role="dialog"
             aria-modal="true"
             aria-labelledby={`${formId}-title`}
           >
-            <div className="flex items-start justify-between gap-4">
+            <BorderMotif variant="corner" className="absolute top-0 right-0 pointer-events-none" />
+            
+            <div className="flex items-start justify-between gap-4 relative z-10">
               <h2
                 id={`${formId}-title`}
                 className="font-heading text-xl text-brand-plum"

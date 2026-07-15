@@ -4,6 +4,7 @@ import { Gem, Heart, Leaf, Sparkles } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ProductCard from "@/components/ui/ProductCard";
 import RecentlyViewedSection from "@/components/ui/RecentlyViewedSection";
+import BorderMotif from "@/components/ui/BorderMotif";
 import { supabase } from "@/lib/supabase";
 import { expireAllStaleReservations } from "@/lib/expire-reservations";
 import { getEffectivePrice, type Promotion } from "@/lib/get-effective-price";
@@ -96,6 +97,7 @@ export default async function HomePage() {
       {/* Hero — dynamic banner or static fallback */}
       {activeBanner ? (
         <section className="w-full relative">
+          <BorderMotif className="absolute top-0 left-0 right-0 z-10" />
           {activeBanner.link_url ? (
             <Link href={activeBanner.link_url} className="block w-full">
               <div className="relative w-full" style={{ aspectRatio: "16/5" }}>
@@ -134,21 +136,42 @@ export default async function HomePage() {
               </div>
             </div>
           )}
+          <BorderMotif className="absolute bottom-0 left-0 right-0 z-10" />
         </section>
       ) : (
         /* Static fallback hero */
-        <section className="w-full bg-brand-plumSoft px-4 py-16 text-center sm:py-20">
-          <h1 className="font-heading text-3xl text-brand-blush sm:text-4xl">
-            Woven with elegance
-          </h1>
-          <p className="mx-auto mt-3 max-w-md text-sm font-light text-brand-rose sm:text-base">
-            Handpicked sarees crafted in silk, zari, and timeless tradition
-          </p>
-          <div className="mt-8">
-            <Button variant="primary" href="/category">
-              Explore new arrivals
-            </Button>
+        <section className="w-full relative px-4 py-16 text-center sm:py-24 bg-brand-plum overflow-hidden">
+          {newArrivals.length > 0 && newArrivals[0].image && (
+            <div className="absolute inset-0 z-0">
+              <Image
+                src={getImageUrl(newArrivals[0].image, 1400)}
+                alt={newArrivals[0].name}
+                fill
+                className="object-cover object-center opacity-40 mix-blend-overlay"
+                priority
+                sizes="100vw"
+              />
+              <div className="absolute inset-0 bg-brand-plum/90 bg-gradient-to-t from-brand-plum to-brand-plum/80" />
+            </div>
+          )}
+          
+          <BorderMotif className="absolute top-0 left-0 right-0 z-10 text-brand-rose opacity-40" />
+          
+          <div className="relative z-10">
+            <h1 className="font-heading text-3xl text-brand-blush sm:text-5xl drop-shadow-md">
+              Woven with elegance
+            </h1>
+            <p className="mx-auto mt-4 max-w-md text-sm font-light text-brand-rose sm:text-lg drop-shadow">
+              Handpicked sarees crafted in silk, zari, and timeless tradition
+            </p>
+            <div className="mt-10">
+              <Button variant="primary" href="/category">
+                Explore new arrivals
+              </Button>
+            </div>
           </div>
+
+          <BorderMotif className="absolute bottom-0 left-0 right-0 z-10 text-brand-rose opacity-40" />
         </section>
       )}
 
@@ -174,6 +197,10 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <div className="w-full bg-brand-white">
+        <BorderMotif />
+      </div>
 
       {/* New arrivals — blush background */}
       <section className="w-full bg-brand-blush">
