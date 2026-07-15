@@ -281,14 +281,35 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
         <label className={labelClass}>Product Images *</label>
         <div className="mt-2 flex flex-wrap gap-3">
           {images.map((publicId, index) => (
-            <div key={publicId + index} className="relative group w-24 h-32 rounded-md overflow-hidden border border-brand-rose/20 bg-brand-blush">
+            <div
+              key={publicId + index}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", index.toString());
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const fromIndex = parseInt(e.dataTransfer.getData("text/plain"), 10);
+                if (!isNaN(fromIndex) && fromIndex !== index) {
+                  moveImage(fromIndex, index);
+                }
+              }}
+              className={`relative group w-24 h-32 rounded-md overflow-hidden bg-brand-blush cursor-move transition-all ${
+                index === 0 ? "border-2 border-brand-plum ring-2 ring-brand-plum/20" : "border border-brand-rose/20"
+              }`}
+            >
               <Image
                 src={getImageUrl(publicId, 100)}
                 alt={`Product image ${index + 1}`}
                 fill
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
               <button
                 type="button"
                 onClick={() => removeImage(index)}
@@ -297,20 +318,8 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
               >
                 <X className="w-3 h-3" />
               </button>
-              <div className="absolute bottom-1 left-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                {index > 0 && (
-                  <button type="button" onClick={() => moveImage(index, index - 1)} className="bg-white/80 rounded p-0.5 text-xs text-brand-plum" title="Move left">
-                    ←
-                  </button>
-                )}
-                {index < images.length - 1 && (
-                  <button type="button" onClick={() => moveImage(index, index + 1)} className="bg-white/80 rounded p-0.5 text-xs text-brand-plum" title="Move right">
-                    →
-                  </button>
-                )}
-              </div>
-              <span className="absolute top-1 left-1 bg-brand-plum/70 text-white text-[10px] px-1 rounded">
-                {index + 1}
+              <span className={`absolute top-1 left-1 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm ${index === 0 ? "bg-brand-plum" : "bg-brand-plum/60"}`}>
+                {index === 0 ? "Primary" : index + 1}
               </span>
             </div>
           ))}
