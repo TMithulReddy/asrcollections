@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { getImageUrl } from "@/lib/cloudinary";
@@ -29,6 +32,7 @@ export default function ProductCard({
   const imageWidth = 400;
   const imageHeight = 533;
   const imageUrl = getImageUrl(image, imageWidth);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const favoriteItem = {
     slug,
@@ -42,13 +46,14 @@ export default function ProductCard({
   return (
     <Link href={`/product/${slug}`} className="group block w-full outline-none ring-brand-plum focus-visible:ring-2 rounded-lg">
       <article className="w-full relative">
-        <div className="relative overflow-hidden rounded-lg bg-brand-blushDark">
+        <div className="relative overflow-hidden rounded-lg bg-brand-blushDark transition-all duration-200 group-hover:scale-[1.02] group-hover:shadow-md">
           <Image
             src={imageUrl}
             alt={name}
             width={imageWidth}
             height={imageHeight}
-            className={`h-auto w-full object-cover transition-transform duration-300 group-hover:scale-105 ${status === "sold" ? "opacity-60" : ""}`}
+            onLoad={() => setIsLoaded(true)}
+            className={`h-auto w-full object-cover transition-opacity duration-300 ${isLoaded ? "opacity-100" : "opacity-0"} ${status === "sold" ? "!opacity-60" : ""}`}
           />
 
           <FavoriteButton item={favoriteItem} />

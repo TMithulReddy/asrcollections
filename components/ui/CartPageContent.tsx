@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
+import Button from "@/components/ui/Button";
 import CartCheckoutButton from "@/components/ui/CartCheckoutButton";
 import { useCart } from "@/lib/cart-context";
 import { getImageUrl } from "@/lib/cloudinary";
@@ -23,15 +23,16 @@ export default function CartPageContent() {
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-16 text-center">
-        <h1 className="font-heading text-2xl text-brand-plum">Your cart</h1>
-        <p className="mt-4 text-brand-rose">Your cart is empty</p>
-        <Link
-          href="/category"
-          className="mt-6 inline-block text-sm font-medium text-brand-mauve underline-offset-2 hover:underline"
-        >
-          Browse sarees
-        </Link>
+      <div className="mx-auto max-w-6xl px-4 py-24 text-center">
+        <h1 className="font-heading text-3xl text-brand-plum">Your cart is feeling a bit light</h1>
+        <p className="mt-4 text-brand-rose max-w-md mx-auto">
+          We have a beautiful collection of handpicked sarees waiting for you. Let&apos;s find something you&apos;ll love!
+        </p>
+        <div className="mt-8">
+          <Button variant="primary" href="/category">
+            Explore collections
+          </Button>
+        </div>
       </div>
     );
   }
