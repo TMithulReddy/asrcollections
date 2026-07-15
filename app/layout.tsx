@@ -13,8 +13,20 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "ASR Collections",
-  description: "ASR Collections",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://asrcollections.in'),
+  title: {
+    default: "ASR Collections | Premium Sarees",
+    template: "%s", // Sub-pages provide their full string e.g. "Product | ASR Collections"
+  },
+  description: "Discover our exclusive collection of premium handpicked sarees at ASR Collections.",
+  openGraph: {
+    title: "ASR Collections | Premium Sarees",
+    description: "Discover our exclusive collection of premium handpicked sarees at ASR Collections.",
+    url: "/",
+    siteName: "ASR Collections",
+    locale: "en_IN",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

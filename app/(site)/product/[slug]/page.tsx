@@ -5,6 +5,8 @@ import ProductGallery from "@/components/ui/ProductGallery";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getEffectivePrice, type Promotion } from "@/lib/get-effective-price";
+import type { Metadata } from "next";
+import { getImageUrl } from "@/lib/cloudinary";
 
 type ProductStatus = "available" | "reserved" | "sold";
 
@@ -37,6 +39,46 @@ function statusNote(status: ProductStatus): string | null {
 
 interface ProductPageProps {
   params: { slug: string };
+}
+
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const { data: product } = await supabase
+    .from("products")
+    .select(`
+      name,
+      description,
+      product_images (
+        image_url,
+        display_order
+      )
+    `)
+    .eq("slug", params.slug)
+    .single();
+
+  if (!product) {
+    return { title: "Product Not Found | ASR Collections" };
+  }
+
+  const sortedImages = [...(product.product_images || [])].sort(
+    (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+  );
+  
+  // Use a sensible default size for OG image (e.g., width 1200)
+  const firstImage = sortedImages.length > 0 ? getImageUrl(sortedImages[0].image_url, 1200) : undefined;
+  
+  const description = product.description 
+    ? (product.description.length > 150 ? product.description.substring(0, 147) + "..." : product.description)
+    : "Shop premium sarees at ASR Collections.";
+
+  return {
+    title: `${product.name} | ASR Collections`,
+    description: description,
+    openGraph: {
+      title: `${product.name} | ASR Collections`,
+      description: description,
+      images: firstImage ? [{ url: firstImage }] : [],
+    },
+  };
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {

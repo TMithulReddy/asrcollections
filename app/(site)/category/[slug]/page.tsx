@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { expireAllStaleReservations } from "@/lib/expire-reservations";
 import { getEffectivePrice, type Promotion } from "@/lib/get-effective-price";
 import { Suspense } from "react";
+import type { Metadata } from "next";
 
 type ProductStatus = "available" | "reserved" | "sold";
 
@@ -27,6 +28,18 @@ function slugToTitle(slug: string): string {
 interface CategoryPageProps {
   params: { slug: string };
   searchParams: { [key: string]: string | string[] | undefined };
+}
+
+export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+  const categoryName = slugToTitle(params.slug);
+  return {
+    title: `${categoryName} | ASR Collections Sarees`,
+    description: `Browse our premium collection of ${categoryName} sarees at ASR Collections.`,
+    openGraph: {
+      title: `${categoryName} | ASR Collections Sarees`,
+      description: `Browse our premium collection of ${categoryName} sarees at ASR Collections.`,
+    },
+  };
 }
 
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
