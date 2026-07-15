@@ -9,6 +9,7 @@ export interface Promotion {
   name: string;
   discount_percent: number;
   category_id: string | null;
+  product_ids: string[] | null;
   start_date: string | null;
   end_date: string | null;
   active: boolean;
@@ -63,11 +64,18 @@ export function getEffectivePrice(
   const applicablePromotions = promotions.filter((promo) => {
     if (!isPromotionCurrentlyActive(promo)) return false;
 
-    // Promotion with null category_id applies to ALL products
-    if (promo.category_id === null) return true;
+    // Promotion with specific products
+    if (promo.product_ids && promo.product_ids.length > 0) {
+      return promo.product_ids.includes(product.id);
+    }
 
     // Promotion with a specific category_id applies if it matches the product's category
-    return promo.category_id === product.category_id;
+    if (promo.category_id) {
+      return promo.category_id === product.category_id;
+    }
+
+    // Promotion with null category_id and null/empty product_ids applies to ALL products
+    return true;
   });
 
   if (applicablePromotions.length === 0) return undefined;

@@ -13,11 +13,17 @@ interface Category {
   name: string;
 }
 
+interface Product {
+  id: string;
+  name: string;
+}
+
 interface Promotion {
   id: string;
   name: string;
   discount_percent: number;
   category_id: string | null;
+  product_ids: string[] | null;
   start_date: string | null;
   end_date: string | null;
   active: boolean;
@@ -26,18 +32,23 @@ interface Promotion {
 interface PromotionManagerProps {
   initialPromotions: Promotion[];
   categories: Category[];
+  products: Product[];
 }
 
 export default function PromotionManager({
   initialPromotions,
   categories,
+  products,
 }: PromotionManagerProps) {
   const [promotions] = useState(initialPromotions);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formName, setFormName] = useState("");
   const [formDiscount, setFormDiscount] = useState("");
+  const [applyType, setApplyType] = useState<"all" | "category" | "products">("all");
   const [formCategoryId, setFormCategoryId] = useState("");
+  const [formProductIds, setFormProductIds] = useState<string[]>([]);
+  const [productSearch, setProductSearch] = useState("");
   const [formStartDate, setFormStartDate] = useState("");
   const [formEndDate, setFormEndDate] = useState("");
   const [formActive, setFormActive] = useState(true);
@@ -48,7 +59,10 @@ export default function PromotionManager({
     setEditingId(null);
     setFormName("");
     setFormDiscount("");
+    setApplyType("all");
     setFormCategoryId("");
+    setFormProductIds([]);
+    setProductSearch("");
     setFormStartDate("");
     setFormEndDate("");
     setFormActive(true);
@@ -60,7 +74,19 @@ export default function PromotionManager({
     setEditingId(promo.id);
     setFormName(promo.name);
     setFormDiscount(String(promo.discount_percent));
+    
+    if (promo.product_ids && promo.product_ids.length > 0) {
+      setApplyType("products");
+    } else if (promo.category_id) {
+      setApplyType("category");
+    } else {
+      setApplyType("all");
+    }
+    
     setFormCategoryId(promo.category_id || "");
+    setFormProductIds(promo.product_ids || []);
+    setProductSearch("");
+    
     setFormStartDate(promo.start_date || "");
     setFormEndDate(promo.end_date || "");
     setFormActive(promo.active);
@@ -93,7 +119,8 @@ export default function PromotionManager({
     const data = {
       name: formName.trim(),
       discount_percent: Number(formDiscount),
-      category_id: formCategoryId || null,
+      category_id: applyType === "category" && formCategoryId ? formCategoryId : null,
+      product_ids: applyType === "products" && formProductIds.length > 0 ? formProductIds : null,
       start_date: formStartDate || null,
       end_date: formEndDate || null,
       active: formActive,
@@ -123,10 +150,15 @@ export default function PromotionManager({
     window.location.reload();
   }
 
-  function getCategoryName(catId: string | null) {
-    if (!catId) return "All Products";
-    const cat = categories.find((c) => c.id === catId);
-    return cat?.name || "Unknown";
+  function getAppliesTo(promo: Promotion) {
+    if (promo.product_ids && promo.product_ids.length > 0) {
+      return `Specific Products (${promo.product_ids.length})`;
+    }
+    if (promo.category_id) {
+      const cat = categories.find((c) => c.id === promo.category_id);
+      return `Category: ${cat?.name || "Unknown"}`;
+    }
+    return "All Products";
   }
 
   const inputClass =
@@ -175,14 +207,62 @@ export default function PromotionManager({
               </div>
             </div>
             <div>
-              <label htmlFor="promo-category" className={labelClass}>Apply to Category</label>
-              <select id="promo-category" value={formCategoryId} onChange={(e) => setFormCategoryId(e.target.value)} className={inputClass}>
-                <option value="">All Products</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-              <p className="text-xs text-brand-plum/50 mt-1">Leave empty to apply to all products, or pick a specific category.</p>
+              <label className={labelClass}>Apply To</label>
+              <div className="flex flex-wrap items-center gap-4 mb-3">
+                <label className="flex items-center gap-2">
+                  <input type="radio" checked={applyType === "all"} onChange={() => setApplyType("all")} className="text-brand-plum focus:ring-brand-plum" />
+                  <span className="text-sm text-brand-plum">All Products</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input type="radio" checked={applyType === "category"} onChange={() => setApplyType("category")} className="text-brand-plum focus:ring-brand-plum" />
+                  <span className="text-sm text-brand-plum">Category</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input type="radio" checked={applyType === "products"} onChange={() => setApplyType("products")} className="text-brand-plum focus:ring-brand-plum" />
+                  <span className="text-sm text-brand-plum">Specific Products</span>
+                </label>
+              </div>
+
+              {applyType === "category" && (
+                <div>
+                  <select id="promo-category" value={formCategoryId} onChange={(e) => setFormCategoryId(e.target.value)} className={inputClass}>
+                    <option value="">Select Category</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {applyType === "products" && (
+                <div className="border border-brand-rose/30 rounded-md p-3">
+                  <input 
+                    type="text" 
+                    placeholder="Search products..." 
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className={inputClass + " mb-3"}
+                  />
+                  <div className="max-h-48 overflow-y-auto space-y-2">
+                    {products
+                      .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                      .map(p => (
+                        <label key={p.id} className="flex items-center gap-2">
+                          <input 
+                            type="checkbox" 
+                            checked={formProductIds.includes(p.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) setFormProductIds(prev => [...prev, p.id]);
+                              else setFormProductIds(prev => prev.filter(id => id !== p.id));
+                            }}
+                            className="rounded text-brand-plum focus:ring-brand-plum"
+                          />
+                          <span className="text-sm text-brand-plum">{p.name}</span>
+                        </label>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -233,7 +313,7 @@ export default function PromotionManager({
                 <tr key={promo.id} className="hover:bg-brand-blush/10 transition-colors">
                   <td className="px-6 py-4 font-medium text-brand-plum">{promo.name}</td>
                   <td className="px-6 py-4 text-brand-plum/80">{promo.discount_percent}%</td>
-                  <td className="px-6 py-4 text-brand-plum/80">{getCategoryName(promo.category_id)}</td>
+                  <td className="px-6 py-4 text-brand-plum/80">{getAppliesTo(promo)}</td>
                   <td className="px-6 py-4 text-sm text-brand-plum/60">
                     {promo.start_date || "—"} → {promo.end_date || "—"}
                   </td>

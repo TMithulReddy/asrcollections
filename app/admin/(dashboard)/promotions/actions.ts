@@ -7,6 +7,7 @@ interface PromotionData {
   name: string;
   discount_percent: number;
   category_id: string | null;
+  product_ids: string[] | null;
   start_date: string | null;
   end_date: string | null;
   active: boolean;
@@ -19,6 +20,7 @@ export async function createPromotion(data: PromotionData) {
     name: data.name.trim(),
     discount_percent: data.discount_percent,
     category_id: data.category_id || null,
+    product_ids: data.product_ids || null,
     start_date: data.start_date || null,
     end_date: data.end_date || null,
     active: data.active,
@@ -39,6 +41,7 @@ export async function updatePromotion(id: string, data: PromotionData) {
       name: data.name.trim(),
       discount_percent: data.discount_percent,
       category_id: data.category_id || null,
+      product_ids: data.product_ids || null,
       start_date: data.start_date || null,
       end_date: data.end_date || null,
       active: data.active,

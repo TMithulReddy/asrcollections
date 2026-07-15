@@ -16,10 +16,16 @@ export default async function AdminPromotionsPage() {
     .select("id, name")
     .order("display_order", { ascending: true });
 
+  const { data: products } = await supabase
+    .from("products")
+    .select("id, name")
+    .order("name", { ascending: true });
+
   return (
     <PromotionManager
       initialPromotions={promotions || []}
       categories={categories || []}
+      products={products || []}
     />
   );
 }
