@@ -56,7 +56,7 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
 
   const [name, setName] = useState(initialData?.name ?? "");
   const [slug, setSlug] = useState(initialData?.slug ?? "");
-  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!initialData);
   const [categoryId, setCategoryId] = useState(initialData?.category_id ?? "");
   const [fabricType, setFabricType] = useState(initialData?.fabric_type ?? "");
   const [description, setDescription] = useState(initialData?.description ?? "");

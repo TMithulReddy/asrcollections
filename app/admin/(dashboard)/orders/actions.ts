@@ -27,11 +27,24 @@ export async function approveOrder(orderId: string) {
   }
 
   // Mark all products in this order as sold
+  let failedProducts = 0;
+  const totalProducts = orderItems?.length || 0;
   for (const item of orderItems || []) {
-    await supabase
+    const { error: productError } = await supabase
       .from("products")
       .update({ status: "sold", reserved_until: null })
       .eq("id", item.product_id);
+
+    if (productError) {
+      failedProducts++;
+    }
+  }
+
+  if (failedProducts > 0) {
+    return { 
+      success: false, 
+      error: `Order status updated, but ${failedProducts} of ${totalProducts} products failed to update — check manually in Supabase` 
+    };
   }
 
   revalidatePath("/admin/orders");
@@ -64,11 +77,24 @@ export async function rejectOrder(orderId: string) {
   }
 
   // Release all products back to available
+  let failedProducts = 0;
+  const totalProducts = orderItems?.length || 0;
   for (const item of orderItems || []) {
-    await supabase
+    const { error: productError } = await supabase
       .from("products")
       .update({ status: "available", reserved_until: null })
       .eq("id", item.product_id);
+
+    if (productError) {
+      failedProducts++;
+    }
+  }
+
+  if (failedProducts > 0) {
+    return { 
+      success: false, 
+      error: `Order status updated, but ${failedProducts} of ${totalProducts} products failed to update — check manually in Supabase` 
+    };
   }
 
   revalidatePath("/admin/orders");

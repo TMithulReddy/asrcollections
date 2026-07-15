@@ -27,7 +27,7 @@ export default async function AdminOrdersPage({ searchParams }: OrdersPageProps)
     .select(`
       id, order_ref, status, total_amount, created_at, confirmed_at,
       customers (name, phone),
-      order_items (id, product_id, quantity, products (name))
+      order_items (id, product_id, quantity, products (name, status))
     `)
     .order("created_at", { ascending: false });
 
@@ -40,6 +40,27 @@ export default async function AdminOrdersPage({ searchParams }: OrdersPageProps)
 
   if (error) {
     console.error("Error fetching orders:", error);
+  } else if (orders) {
+    const driftWarnings: string[] = [];
+    orders.forEach((order) => {
+      const items = order.order_items || [];
+      if (order.status === "confirmed") {
+        const hasUnsold = items.some((item: { products: { status?: string } | { status?: string }[] | null }) => {
+          const p = Array.isArray(item.products) ? item.products[0] : item.products;
+          return p && p.status !== "sold";
+        });
+        if (hasUnsold) driftWarnings.push(`Order ${order.order_ref} is confirmed but has non-sold products.`);
+      } else if (order.status === "rejected") {
+        const hasUnavailable = items.some((item: { products: { status?: string } | { status?: string }[] | null }) => {
+          const p = Array.isArray(item.products) ? item.products[0] : item.products;
+          return p && p.status !== "available";
+        });
+        if (hasUnavailable) driftWarnings.push(`Order ${order.order_ref} is rejected but has non-available products.`);
+      }
+    });
+    if (driftWarnings.length > 0) {
+      console.warn("DATA INTEGRITY WARNINGS:", driftWarnings);
+    }
   }
 
   return (
@@ -79,7 +100,7 @@ export default async function AdminOrdersPage({ searchParams }: OrdersPageProps)
                   : order.customers;
                 const items = order.order_items || [];
                 const itemsSummary = items
-                  .map((item: { quantity: number; products: { name: string } | { name: string }[] | null }) => {
+                  .map((item: { quantity: number; products: { name: string; status?: string } | { name: string; status?: string }[] | null }) => {
                     const product = Array.isArray(item.products) ? item.products[0] : item.products;
                     const productName = product?.name || "Unknown";
                     return `${productName} ×${item.quantity}`;
