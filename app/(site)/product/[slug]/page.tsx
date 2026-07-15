@@ -2,6 +2,7 @@ import AddToCartButton from "@/components/ui/AddToCartButton";
 import BuyNowButton from "@/components/ui/BuyNowButton";
 import ProductCard from "@/components/ui/ProductCard";
 import ProductGallery from "@/components/ui/ProductGallery";
+import ProductViewTracker from "@/components/ui/ProductViewTracker";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getEffectivePrice, type Promotion } from "@/lib/get-effective-price";
@@ -167,6 +168,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
+      <ProductViewTracker slug={params.slug} />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
         <ProductGallery
           images={sortedImages}

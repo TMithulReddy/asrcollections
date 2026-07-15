@@ -6,6 +6,7 @@ import SearchBar from "@/components/ui/SearchBar";
 import FavoritesNavLink from "@/components/ui/FavoritesNavLink";
 import { CartProvider } from "@/lib/cart-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
+import { RecentlyViewedProvider } from "@/lib/recently-viewed-context";
 
 const navLinks = [
   { href: "/sarees", label: "Sarees" },
@@ -30,7 +31,8 @@ export default function SiteLayout({
   return (
     <CartProvider>
       <FavoritesProvider>
-        <div className="flex min-h-screen flex-col bg-brand-white">
+        <RecentlyViewedProvider>
+          <div className="flex min-h-screen flex-col bg-brand-white">
           <header className="sticky top-0 z-50 border-b border-brand-blushDark bg-brand-white">
             <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
               {/* Logo */}
@@ -95,6 +97,7 @@ export default function SiteLayout({
             </div>
           </footer>
         </div>
+        </RecentlyViewedProvider>
       </FavoritesProvider>
     </CartProvider>
   );

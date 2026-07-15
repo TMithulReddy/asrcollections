@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Gem, Heart, Leaf, Sparkles } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ProductCard from "@/components/ui/ProductCard";
+import RecentlyViewedSection from "@/components/ui/RecentlyViewedSection";
 import { supabase } from "@/lib/supabase";
 import { expireAllStaleReservations } from "@/lib/expire-reservations";
 import { getEffectivePrice, type Promotion } from "@/lib/get-effective-price";
@@ -185,6 +186,8 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <RecentlyViewedSection />
     </>
   );
 }
