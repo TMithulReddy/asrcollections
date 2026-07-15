@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import OrderActions from "@/components/admin/OrderActions";
-import OrderStatusFilter from "@/components/admin/OrderStatusFilter";
-import { Suspense } from "react";
+import OrderExportButton, { ExportOrder } from "@/components/admin/OrderExportButton";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +31,32 @@ export default async function AdminOrdersPage({ searchParams }: OrdersPageProps)
     `)
     .order("created_at", { ascending: false });
 
+  const searchParamValue = searchParams.search;
+  const isSearch = typeof searchParamValue === "string" && searchParamValue.trim() !== "";
+  
   const statusFilter = typeof searchParams.status === "string" ? searchParams.status : null;
   if (statusFilter && statusFilter !== "all") {
     query = query.eq("status", statusFilter);
   }
+  
+  if (isSearch) {
+    query = query.ilike("order_ref", `%${searchParamValue}%`);
+  }
 
-  const { data: orders, error } = await query;
+  const [{ data: orders, error }, { data: allOrdersForCounts }] = await Promise.all([
+    query,
+    supabase.from("orders").select("status")
+  ]);
+  
+  const counts = { pending: 0, confirmed: 0, rejected: 0, expired: 0, total: 0 };
+  if (allOrdersForCounts) {
+    counts.total = allOrdersForCounts.length;
+    allOrdersForCounts.forEach(o => {
+      if (o.status in counts) {
+        counts[o.status as keyof typeof counts]++;
+      }
+    });
+  }
 
   if (error) {
     console.error("Error fetching orders:", error);
@@ -63,14 +83,54 @@ export default async function AdminOrdersPage({ searchParams }: OrdersPageProps)
     }
   }
 
+  const exportData: ExportOrder[] = (orders || []).map(order => {
+    const customer = Array.isArray(order.customers) ? order.customers[0] : order.customers;
+    const items = order.order_items || [];
+    const itemsSummary = items
+      .map((item: { quantity: number; products: { name: string } | { name: string }[] | null }) => {
+        const product = Array.isArray(item.products) ? item.products[0] : item.products;
+        return `${product?.name || "Unknown"} ×${item.quantity}`;
+      })
+      .join(", ");
+      
+    return {
+      order_ref: order.order_ref,
+      customerName: (customer as { name?: string })?.name || "—",
+      customerPhone: (customer as { phone?: string })?.phone || "",
+      itemsSummary,
+      total: Number(order.total_amount),
+      status: order.status,
+      date: new Date(order.created_at).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+    };
+  });
+
   return (
     <div>
       <h1 className="text-3xl font-heading text-brand-plum mb-6">Orders</h1>
 
-      <div className="mb-6">
-        <Suspense fallback={null}>
-          <OrderStatusFilter />
-        </Suspense>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/orders?status=pending" className={`px-4 py-2 rounded-md text-sm font-medium border transition-colors ${statusFilter === "pending" ? "bg-brand-plum text-brand-white border-brand-plum" : "bg-brand-white text-brand-plum border-brand-rose/40 hover:bg-brand-blush/30"}`}>
+            Pending ({counts.pending})
+          </Link>
+          <Link href="/admin/orders?status=confirmed" className={`px-4 py-2 rounded-md text-sm font-medium border transition-colors ${statusFilter === "confirmed" ? "bg-brand-plum text-brand-white border-brand-plum" : "bg-brand-white text-brand-plum border-brand-rose/40 hover:bg-brand-blush/30"}`}>
+            Confirmed ({counts.confirmed})
+          </Link>
+          <Link href="/admin/orders?status=rejected" className={`px-4 py-2 rounded-md text-sm font-medium border transition-colors ${statusFilter === "rejected" ? "bg-brand-plum text-brand-white border-brand-plum" : "bg-brand-white text-brand-plum border-brand-rose/40 hover:bg-brand-blush/30"}`}>
+            Rejected ({counts.rejected})
+          </Link>
+          <Link href="/admin/orders?status=expired" className={`px-4 py-2 rounded-md text-sm font-medium border transition-colors ${statusFilter === "expired" ? "bg-brand-plum text-brand-white border-brand-plum" : "bg-brand-white text-brand-plum border-brand-rose/40 hover:bg-brand-blush/30"}`}>
+            Expired ({counts.expired})
+          </Link>
+          <Link href="/admin/orders" className={`px-4 py-2 rounded-md text-sm font-medium border transition-colors ${!statusFilter || statusFilter === "all" ? "bg-brand-plum text-brand-white border-brand-plum" : "bg-brand-white text-brand-plum border-brand-rose/40 hover:bg-brand-blush/30"}`}>
+            Total ({counts.total})
+          </Link>
+        </div>
+        <OrderExportButton orders={exportData} />
       </div>
 
       <div className="bg-brand-white rounded-lg border border-brand-rose/20 shadow-sm overflow-hidden">

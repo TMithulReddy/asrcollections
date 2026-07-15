@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import SidebarNav from "@/components/admin/SidebarNav";
+import AdminSearch from "@/components/admin/AdminSearch";
 
 export default async function AdminLayout({
   children,
@@ -49,9 +50,17 @@ export default async function AdminLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto p-8 bg-brand-blush">
-        {children}
-      </main>
+      <div className="flex-1 flex flex-col min-h-screen bg-brand-blush overflow-hidden">
+        <header className="flex-shrink-0 px-8 py-4 bg-brand-white border-b border-brand-rose/20 flex items-center justify-between z-10">
+          <div className="flex-1" />
+          <div className="w-full max-w-md flex justify-end">
+            <AdminSearch />
+          </div>
+        </header>
+        <main className="flex-1 overflow-auto p-8">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
