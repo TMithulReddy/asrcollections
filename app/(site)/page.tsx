@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Gem, Heart, Leaf, Sparkles } from "lucide-react";
+import { Gem, Heart, Leaf, Sparkles, CheckCircle2, MessageCircle, HeartHandshake } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ProductCard from "@/components/ui/ProductCard";
 import RecentlyViewedSection from "@/components/ui/RecentlyViewedSection";
@@ -174,6 +174,26 @@ export default async function HomePage() {
           <BorderMotif className="absolute bottom-0 left-0 right-0 z-10 text-brand-rose opacity-40" />
         </section>
       )}
+
+      {/* Trust signals */}
+      <section className="w-full border-b border-brand-blushDark bg-brand-white py-4">
+        <div className="mx-auto max-w-6xl px-4 flex flex-col sm:flex-row justify-center items-center gap-6 sm:gap-12 text-center sm:text-left">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="h-5 w-5 text-brand-mauve opacity-80" />
+            <span className="text-sm font-medium text-brand-plum">Handpicked pieces, one of a kind</span>
+          </div>
+          <div className="hidden sm:block h-4 w-px bg-brand-blushDark" />
+          <div className="flex items-center gap-3">
+            <MessageCircle className="h-5 w-5 text-brand-mauve opacity-80" />
+            <span className="text-sm font-medium text-brand-plum">Order directly on WhatsApp, no middleman</span>
+          </div>
+          <div className="hidden sm:block h-4 w-px bg-brand-blushDark" />
+          <div className="flex items-center gap-3">
+            <HeartHandshake className="h-5 w-5 text-brand-mauve opacity-80" />
+            <span className="text-sm font-medium text-brand-plum">[X] happy customers</span>
+          </div>
+        </div>
+      </section>
 
       {/* Category tiles — white background */}
       <section className="w-full bg-brand-white">

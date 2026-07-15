@@ -137,7 +137,7 @@ export default function CartCheckoutButton() {
       formId="cart-checkout"
       trigger={
         <Button variant="whatsapp" onClick={openModal}>
-          Checkout via WhatsApp
+          Buy now via WhatsApp
         </Button>
       }
     />

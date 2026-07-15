@@ -110,8 +110,12 @@ export default function CustomerCheckoutModal({
                     className="mt-1 w-full rounded-lg border border-brand-blushDark px-3 py-2 text-sm text-brand-plum"
                     autoComplete="tel"
                   />
-                  {phoneError && (
+                  {phoneError ? (
                     <p className="mt-1 text-xs text-brand-rose">{phoneError}</p>
+                  ) : (
+                    <p className="mt-1 text-xs text-brand-plum/60">
+                      We&apos;ll only use this to confirm your order over WhatsApp — nothing else.
+                    </p>
                   )}
                 </div>
 
