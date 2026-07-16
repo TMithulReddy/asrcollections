@@ -6,9 +6,9 @@ import { Menu, X } from "lucide-react";
 
 const navLinks = [
   { href: "/sarees", label: "Sarees" },
-  { href: "/sarees", label: "New Arrivals" },
+  { href: "/sarees?new=true", label: "New Arrivals" },
   { href: "/category/wedding-edit", label: "Wedding Edit" },
-  { href: "/sarees", label: "Sale" },
+  { href: "/sarees?sale=true", label: "Sale" },
 ];
 
 export default function MobileNav() {

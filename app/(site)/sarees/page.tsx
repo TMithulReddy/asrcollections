@@ -92,6 +92,23 @@ export default async function AllSareesPage({ searchParams }: AllSareesPageProps
     });
   }
 
+  if (searchParams.sale === "true") {
+    filteredProducts = filteredProducts.filter((p) => {
+      const effectiveDiscount = getEffectivePrice(
+        { id: p.id, price: p.price, discount_price: p.discount_price, category_id: p.category_id },
+        activePromotions
+      );
+      return effectiveDiscount != null;
+    });
+  }
+
+  if (searchParams.new === "true") {
+    const fourteenDaysAgoDate = new Date();
+    fourteenDaysAgoDate.setDate(fourteenDaysAgoDate.getDate() - 14);
+    const fourteenDaysAgo = fourteenDaysAgoDate.toISOString();
+    filteredProducts = filteredProducts.filter((p) => p.created_at && p.created_at >= fourteenDaysAgo);
+  }
+
   const sort = typeof searchParams.sort === "string" ? searchParams.sort : "newest";
   if (sort === "price-asc") {
     filteredProducts.sort((a, b) => {
@@ -172,11 +189,18 @@ export default async function AllSareesPage({ searchParams }: AllSareesPageProps
 
   const isEmpty = allProducts.length === 0;
 
+  let pageTitle = "All Sarees";
+  if (searchParams.sale === "true") {
+    pageTitle = "On Sale";
+  } else if (searchParams.new === "true") {
+    pageTitle = "New Arrivals";
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <header>
         <h1 className="font-heading text-2xl text-brand-plum sm:text-3xl">
-          All Sarees
+          {pageTitle}
         </h1>
         <p className="mt-1 text-sm text-brand-rose">
           {allProducts.length} {allProducts.length === 1 ? "saree" : "sarees"}
