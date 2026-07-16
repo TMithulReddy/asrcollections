@@ -16,11 +16,57 @@ export async function searchAdminItems(query: string): Promise<SearchResult[]> {
   const supabase = createClient();
   const searchPattern = `%${query.trim()}%`;
   
-  const { data: products } = await supabase
+  const { data: productsByName } = await supabase
     .from("products")
-    .select("id, name, sku, slug")
-    .or(`name.ilike.${searchPattern},sku.ilike.${searchPattern}`)
+    .select("id, name, slug")
+    .ilike("name", searchPattern)
     .limit(5);
+
+  const { data: matchedUnits } = await supabase
+    .from("product_units")
+    .select("id, sku, product_id, products (id, name, slug)")
+    .ilike("sku", searchPattern)
+    .limit(5);
+
+  const productMatches = new Map<string, { id: string; name: string; subtitle: string }>();
+
+  if (productsByName) {
+    productsByName.forEach((p) => {
+      productMatches.set(p.id, {
+        id: p.id,
+        name: p.name,
+        subtitle: `Slug: ${p.slug}`,
+      });
+    });
+  }
+
+  if (matchedUnits) {
+    matchedUnits.forEach((u) => {
+      const parentProduct = Array.isArray(u.products) ? u.products[0] : u.products;
+      if (!parentProduct) return;
+      // If already matched by name, we don't strictly need to overwrite, 
+      // but showing the matched SKU might be helpful if they typed an SKU.
+      // We will only add it if it doesn't exist, or we can overwrite it to show the SKU. 
+      // Overwriting with SKU is better since it explains *why* the SKU search matched.
+      productMatches.set(parentProduct.id, {
+        id: parentProduct.id,
+        name: parentProduct.name,
+        subtitle: `SKU: ${u.sku}`,
+      });
+    });
+  }
+
+  const results: SearchResult[] = [];
+
+  Array.from(productMatches.values()).forEach((p) => {
+    results.push({
+      id: p.id,
+      type: "product",
+      title: p.name,
+      subtitle: p.subtitle,
+      href: `/admin/products/${p.id}/edit`,
+    });
+  });
 
   const { data: orders } = await supabase
     .from("orders")
@@ -43,20 +89,6 @@ export async function searchAdminItems(query: string): Promise<SearchResult[]> {
       .in("customer_id", customerIds)
       .limit(5);
     additionalOrders = cOrders || [];
-  }
-
-  const results: SearchResult[] = [];
-
-  if (products) {
-    products.forEach((p) => {
-      results.push({
-        id: p.id,
-        type: "product",
-        title: p.name,
-        subtitle: p.sku || "No SKU",
-        href: `/admin/products/${p.id}/edit`,
-      });
-    });
   }
 
   const allOrders = [...(orders || []), ...additionalOrders];
