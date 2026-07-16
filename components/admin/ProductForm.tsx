@@ -23,8 +23,21 @@ interface Category {
   name: string;
 }
 
+interface ProductUnit {
+  id: string;
+  sku: string | null;
+  status: string;
+}
+
+interface ProductAvailability {
+  total_units: number;
+  sold_units: number;
+  available_units: number;
+}
+
 interface ProductFormProps {
   categories: Category[];
+  availability?: ProductAvailability;
   initialData?: {
     id: string;
     name: string;
@@ -34,8 +47,7 @@ interface ProductFormProps {
     description: string;
     price: number;
     discount_price: number | null;
-    sku: string;
-    status: string;
+    units: ProductUnit[];
     images: string[]; // public_ids
   };
 }
@@ -50,7 +62,7 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export default function ProductForm({ categories, initialData }: ProductFormProps) {
+export default function ProductForm({ categories, initialData, availability }: ProductFormProps) {
   const router = useRouter();
   const isEditing = !!initialData;
 
@@ -64,8 +76,39 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
   const [discountPrice, setDiscountPrice] = useState(
     initialData?.discount_price?.toString() ?? ""
   );
-  const [sku, setSku] = useState(initialData?.sku ?? "");
-  const [status, setStatus] = useState(initialData?.status ?? "available");
+
+  // Sale toggle state
+  const initialOnSale =
+    initialData != null && initialData.discount_price != null && initialData.discount_price > 0;
+  const [onSale, setOnSale] = useState(initialOnSale);
+
+  // Back-calculate initial discount percentage from price & discount_price
+  const computeInitialPct = (): string => {
+    if (
+      initialData &&
+      initialData.discount_price != null &&
+      initialData.discount_price > 0 &&
+      initialData.price > 0
+    ) {
+      const pct = ((initialData.price - initialData.discount_price) / initialData.price) * 100;
+      return Math.round(pct).toString();
+    }
+    return "";
+  };
+  const [discountPct, setDiscountPct] = useState(computeInitialPct);
+
+  // Units state
+  const existingUnits: ProductUnit[] = initialData?.units ?? [];
+  const [unitCount, setUnitCount] = useState(
+    existingUnits.length > 0 ? existingUnits.length : 1
+  );
+  const [unitSkus, setUnitSkus] = useState<string[]>(() => {
+    if (existingUnits.length > 0) {
+      return existingUnits.map((u) => u.sku ?? "");
+    }
+    return [""];
+  });
+
   const [images, setImages] = useState<string[]>(initialData?.images ?? []);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -76,6 +119,38 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
       setSlug(slugify(name));
     }
   }, [name, slugManuallyEdited]);
+
+  // Recalculate discount_price whenever price or discountPct changes and sale is on
+  useEffect(() => {
+    if (onSale && discountPct !== "" && price !== "") {
+      const p = Number(price);
+      const pct = Number(discountPct);
+      if (!isNaN(p) && !isNaN(pct) && pct >= 0 && pct <= 100) {
+        const dp = Math.round(p - (p * pct) / 100);
+        setDiscountPrice(dp.toString());
+      }
+    }
+  }, [price, discountPct, onSale]);
+
+  // When unit count changes, grow/shrink the SKU array
+  const handleUnitCountChange = (newCount: number) => {
+    if (newCount < 1) newCount = 1;
+    setUnitCount(newCount);
+    setUnitSkus((prev) => {
+      if (newCount > prev.length) {
+        return [...prev, ...Array(newCount - prev.length).fill("")];
+      }
+      return prev.slice(0, newCount);
+    });
+  };
+
+  const handleSkuChange = (index: number, value: string) => {
+    setUnitSkus((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  };
 
   // Load Cloudinary Upload Widget script
   useEffect(() => {
@@ -139,8 +214,34 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
     if (!price || isNaN(Number(price))) { setError("Valid price is required."); setIsSaving(false); return; }
     if (images.length === 0) { setError("At least one product image is required."); setIsSaving(false); return; }
 
+    // Validate duplicate SKUs within this product
+    const filledSkus = unitSkus.filter((s) => s.trim() !== "");
+    const uniqueSkus = new Set(filledSkus);
+    if (uniqueSkus.size < filledSkus.length) {
+      setError("Duplicate SKU within this product.");
+      setIsSaving(false);
+      return;
+    }
+
+    // For editing: validate that we don't remove non-available units
+    if (isEditing && initialData) {
+      const nonAvailableCount = existingUnits.filter(
+        (u) => u.status === "reserved" || u.status === "sold"
+      ).length;
+      if (unitCount < nonAvailableCount) {
+        setError(
+          `Cannot remove unit — ${nonAvailableCount} unit${nonAvailableCount !== 1 ? "s are" : " is"} reserved or sold and must stay recorded.`
+        );
+        setIsSaving(false);
+        return;
+      }
+    }
+
     try {
       const supabase = createClient();
+
+      // Build product payload WITHOUT sku and status (dead columns)
+      const computedDiscountPrice = onSale && discountPrice ? Number(discountPrice) : null;
 
       const productData = {
         name: name.trim(),
@@ -149,9 +250,7 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
         fabric_type: fabricType.trim(),
         description: description.trim(),
         price: Number(price),
-        discount_price: discountPrice ? Number(discountPrice) : null,
-        sku: sku.trim(),
-        status,
+        discount_price: computedDiscountPrice,
       };
 
       let productId: string;
@@ -175,6 +274,66 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
 
         if (insertError) throw new Error(insertError.message);
         productId = inserted.id;
+      }
+
+      // ── Sync product_units ──
+      if (isEditing && initialData) {
+        // Existing units, ordered same as they were passed in
+        const kept = existingUnits.slice(0, unitCount);
+        const removedCandidates = existingUnits.slice(unitCount);
+
+        // Update SKUs on kept units
+        for (let i = 0; i < kept.length; i++) {
+          const newSku = unitSkus[i]?.trim() || null;
+          if (newSku !== kept[i].sku) {
+            const { error: updErr } = await supabase
+              .from("product_units")
+              .update({ sku: newSku })
+              .eq("id", kept[i].id);
+            if (updErr) throw new Error(updErr.message);
+          }
+        }
+
+        // Delete removed units (only available ones — validation above ensures this is safe)
+        for (const unit of removedCandidates) {
+          if (unit.status === "available") {
+            const { error: delErr } = await supabase
+              .from("product_units")
+              .delete()
+              .eq("id", unit.id);
+            if (delErr) throw new Error(delErr.message);
+          }
+        }
+
+        // Insert new units if count increased
+        if (unitCount > existingUnits.length) {
+          const newRows = [];
+          for (let i = existingUnits.length; i < unitCount; i++) {
+            newRows.push({
+              product_id: productId,
+              sku: unitSkus[i]?.trim() || null,
+              status: "available",
+            });
+          }
+          const { error: insErr } = await supabase
+            .from("product_units")
+            .insert(newRows);
+          if (insErr) throw new Error(insErr.message);
+        }
+      } else {
+        // New product: insert all units
+        const newRows = [];
+        for (let i = 0; i < unitCount; i++) {
+          newRows.push({
+            product_id: productId,
+            sku: unitSkus[i]?.trim() || null,
+            status: "available",
+          });
+        }
+        const { error: insErr } = await supabase
+          .from("product_units")
+          .insert(newRows);
+        if (insErr) throw new Error(insErr.message);
       }
 
       // Replace product_images: delete existing, insert current set
@@ -250,30 +409,135 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
         <textarea id="description" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} />
       </div>
 
-      {/* Price + Discount Price + SKU row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
-          <label htmlFor="price" className={labelClass}>Price (₹) *</label>
-          <input id="price" type="number" step="1" min="0" value={price} onChange={(e) => setPrice(e.target.value)} required className={inputClass} />
+      {/* Price + Sale Toggle */}
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="price" className={labelClass}>Price (₹) *</label>
+            <input id="price" type="number" step="1" min="0" value={price} onChange={(e) => setPrice(e.target.value)} required className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>This item is on sale?</label>
+            <div className="flex items-center gap-4 mt-1">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  name="onSale"
+                  checked={onSale}
+                  onChange={() => setOnSale(true)}
+                  className="accent-brand-plum"
+                />
+                <span className="text-sm text-brand-plum">Yes</span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  name="onSale"
+                  checked={!onSale}
+                  onChange={() => {
+                    setOnSale(false);
+                    setDiscountPct("");
+                    setDiscountPrice("");
+                  }}
+                  className="accent-brand-plum"
+                />
+                <span className="text-sm text-brand-plum">No</span>
+              </label>
+            </div>
+          </div>
         </div>
-        <div>
-          <label htmlFor="discountPrice" className={labelClass}>Discount Price (₹)</label>
-          <input id="discountPrice" type="number" step="1" min="0" value={discountPrice} onChange={(e) => setDiscountPrice(e.target.value)} className={inputClass} placeholder="Optional" />
-        </div>
-        <div>
-          <label htmlFor="sku" className={labelClass}>SKU</label>
-          <input id="sku" type="text" value={sku} onChange={(e) => setSku(e.target.value)} className={inputClass} />
-        </div>
+
+        {onSale && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-0 sm:pl-0">
+            <div>
+              <label htmlFor="discountPct" className={labelClass}>Discount %</label>
+              <input
+                id="discountPct"
+                type="number"
+                step="1"
+                min="0"
+                max="100"
+                value={discountPct}
+                onChange={(e) => setDiscountPct(e.target.value)}
+                className={inputClass}
+                placeholder="e.g. 20"
+              />
+            </div>
+            <div>
+              <label htmlFor="discountPrice" className={labelClass}>Discount Price (₹)</label>
+              <input
+                id="discountPrice"
+                type="number"
+                step="1"
+                min="0"
+                value={discountPrice}
+                readOnly
+                className={`${inputClass} bg-brand-blush/50 cursor-not-allowed`}
+                placeholder="Auto-calculated"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Status */}
-      <div>
-        <label htmlFor="status" className={labelClass}>Status</label>
-        <select id="status" value={status} onChange={(e) => setStatus(e.target.value)} className={inputClass}>
-          <option value="available">Available</option>
-          <option value="reserved">Reserved</option>
-          <option value="sold">Sold</option>
-        </select>
+      {/* Number of Units + per-unit SKUs */}
+      <div className="space-y-3">
+        {isEditing && availability && (
+          <div className="text-sm text-brand-plum/70 bg-brand-blush/40 border border-brand-rose/20 rounded-md px-3 py-2">
+            <span className="font-medium text-green-700">{availability.available_units} available</span>
+            {" · "}
+            <span className="font-medium text-red-700">{availability.sold_units} sold</span>
+            {" · "}
+            <span className="font-medium text-brand-plum">{availability.total_units} total</span>
+          </div>
+        )}
+        <div>
+          <label htmlFor="unitCount" className={labelClass}>Number of Units</label>
+          <input
+            id="unitCount"
+            type="number"
+            min="1"
+            value={unitCount}
+            onChange={(e) => handleUnitCountChange(Math.max(1, parseInt(e.target.value) || 1))}
+            className={`${inputClass} max-w-[140px]`}
+          />
+        </div>
+
+        <div className="space-y-2">
+          {Array.from({ length: unitCount }).map((_, i) => {
+            const existingUnit = existingUnits[i];
+            const statusBadge = existingUnit ? (
+              <span
+                className={`ml-2 text-xs px-1.5 py-0.5 rounded ${
+                  existingUnit.status === "available"
+                    ? "bg-green-100 text-green-700"
+                    : existingUnit.status === "reserved"
+                    ? "bg-yellow-100 text-yellow-700"
+                    : "bg-red-100 text-red-700"
+                }`}
+              >
+                {existingUnit.status}
+              </span>
+            ) : null;
+
+            return (
+              <div key={i}>
+                <label htmlFor={`sku-${i}`} className={labelClass}>
+                  Unit {i + 1} SKU
+                  {statusBadge}
+                </label>
+                <input
+                  id={`sku-${i}`}
+                  type="text"
+                  value={unitSkus[i] ?? ""}
+                  onChange={(e) => handleSkuChange(i, e.target.value)}
+                  className={inputClass}
+                  placeholder="Optional"
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Images */}

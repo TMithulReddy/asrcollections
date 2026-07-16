@@ -13,13 +13,14 @@ interface EditProductPageProps {
 export default async function EditProductPage({ params }: EditProductPageProps) {
   const supabase = createClient();
 
-  // Fetch the product with its images
+  // Fetch the product with its images and physical units
   const { data: product } = await supabase
     .from("products")
     .select(`
       id, name, slug, category_id, fabric_type, description,
-      price, discount_price, sku, status,
-      product_images (image_url, display_order)
+      price, discount_price,
+      product_images (image_url, display_order),
+      product_units (id, sku, status)
     `)
     .eq("id", params.id)
     .single();
@@ -39,6 +40,22 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
     .sort((a, b) => a.display_order - b.display_order)
     .map((img) => img.image_url);
 
+  // Map product_units to the shape the form expects
+  const units = (product.product_units || []).map((u: { id: string; sku: string | null; status: string }) => ({
+    id: u.id,
+    sku: u.sku,
+    status: u.status,
+  }));
+
+  // Fetch availability stats from the product_availability view
+  const { data: availabilityRow } = await supabase
+    .from("product_availability")
+    .select("total_units, sold_units, available_units")
+    .eq("product_id", params.id)
+    .single();
+
+  const availability = availabilityRow ?? undefined;
+
   const initialData = {
     id: product.id,
     name: product.name,
@@ -48,8 +65,7 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
     description: product.description || "",
     price: product.price,
     discount_price: product.discount_price,
-    sku: product.sku || "",
-    status: product.status,
+    units,
     images: sortedImages,
   };
 
@@ -64,7 +80,7 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
       </Link>
       <h1 className="text-3xl font-heading text-brand-plum mb-6">Edit Product</h1>
       <div className="bg-brand-white rounded-lg border border-brand-rose/20 shadow-sm p-6">
-        <ProductForm categories={categories || []} initialData={initialData} />
+        <ProductForm categories={categories || []} initialData={initialData} availability={availability} />
       </div>
     </div>
   );
