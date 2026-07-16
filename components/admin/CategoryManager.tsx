@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Edit, Trash2, Plus, X } from "lucide-react";
 import {
   createCategory,
@@ -266,7 +267,16 @@ export default function CategoryManager({
                     {cat.slug}
                   </td>
                   <td className="px-6 py-4 text-brand-plum/80">
-                    {cat.product_count}
+                    {cat.product_count > 0 ? (
+                      <Link
+                        href={`/admin/products?category=${cat.id}`}
+                        className="text-brand-plum font-medium hover:underline"
+                      >
+                        {cat.product_count}
+                      </Link>
+                    ) : (
+                      cat.product_count
+                    )}
                   </td>
                   <td className="px-6 py-4 text-brand-plum/80">
                     {cat.display_order}

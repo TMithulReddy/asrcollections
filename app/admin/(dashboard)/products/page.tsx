@@ -1,14 +1,19 @@
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import AdminProductsTable from "@/components/admin/AdminProductsTable";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminProductsPage() {
+export default async function AdminProductsPage({
+  searchParams,
+}: {
+  searchParams: { category?: string };
+}) {
   const supabase = createClient();
+  const categoryFilter = searchParams.category;
 
-  const { data: products, error } = await supabase
+  let query = supabase
     .from("products")
     .select(`
       id,
@@ -21,6 +26,12 @@ export default async function AdminProductsPage() {
       product_images (image_url, display_order)
     `)
     .order("created_at", { ascending: false });
+
+  if (categoryFilter) {
+    query = query.eq("category_id", categoryFilter);
+  }
+
+  const { data: products, error } = await query;
 
   let productsWithAvailability = products || [];
   
@@ -58,9 +69,13 @@ export default async function AdminProductsPage() {
     console.error("Error fetching data:", error || catError);
   }
 
+  const activeCategory = categoryFilter 
+    ? categories?.find((c) => c.id === categoryFilter)
+    : null;
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-heading text-brand-plum">Products</h1>
         <Link
           href="/admin/products/new"
@@ -70,6 +85,22 @@ export default async function AdminProductsPage() {
           Add Product
         </Link>
       </div>
+
+      {activeCategory && (
+        <div className="mb-6 flex items-center gap-2">
+          <span className="text-sm text-brand-plum/70">Filtered by category:</span>
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-brand-blush text-brand-plum border border-brand-rose/40 shadow-sm">
+            {activeCategory.name}
+            <Link
+              href="/admin/products"
+              className="ml-2 hover:bg-brand-rose/20 rounded-full p-0.5 transition-colors"
+              title="Clear filter"
+            >
+              <X className="w-3 h-3" />
+            </Link>
+          </span>
+        </div>
+      )}
 
       <AdminProductsTable products={productsWithAvailability as any} categories={categories || []} />
     </div>
