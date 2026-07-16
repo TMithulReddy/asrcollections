@@ -83,10 +83,13 @@ export default async function HomePage() {
     }
   }
 
-  const newArrivals = (products || []).map((product) => {
-    // Sort images by display_order
+  const fourteenDaysAgoDate = new Date();
+  fourteenDaysAgoDate.setDate(fourteenDaysAgoDate.getDate() - 14);
+  const fourteenDaysAgo = fourteenDaysAgoDate.toISOString();
+
+  function mapToCardItem(product: any) {
     const sortedImages = [...(product.product_images || [])].sort(
-      (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+      (a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0)
     );
     const imageUrl = sortedImages.length > 0 ? sortedImages[0].image_url : "";
 
@@ -115,7 +118,15 @@ export default async function HomePage() {
       hasPendingInterest,
       image: imageUrl,
     };
-  });
+  }
+
+  const newArrivals = (products || [])
+    .filter(p => p.created_at && p.created_at >= fourteenDaysAgo)
+    .map(mapToCardItem);
+
+  const saleProducts = (products || [])
+    .map(mapToCardItem)
+    .filter(p => p.discountPrice != null);
 
   return (
     <>
@@ -251,13 +262,33 @@ export default async function HomePage() {
       <section className="w-full bg-brand-blush">
         <div className="mx-auto max-w-6xl px-4 py-12">
           <h2 className="font-heading text-2xl text-brand-plum">New arrivals</h2>
-          <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {newArrivals.map((product) => (
-              <ProductCard key={product.name} {...product} />
-            ))}
-          </div>
+          {newArrivals.length === 0 ? (
+            <p className="mt-6 text-brand-rose text-sm italic">
+              Check back soon for new pieces
+            </p>
+          ) : (
+            <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {newArrivals.map((product) => (
+                <ProductCard key={product.name} {...product} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
+
+      {/* On Sale — white background */}
+      {saleProducts.length > 0 && (
+        <section className="w-full bg-brand-white">
+          <div className="mx-auto max-w-6xl px-4 py-12">
+            <h2 className="font-heading text-2xl text-brand-plum">On Sale</h2>
+            <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {saleProducts.map((product) => (
+                <ProductCard key={product.name} {...product} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <RecentlyViewedSection />
     </>
