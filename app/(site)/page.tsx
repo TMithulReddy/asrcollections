@@ -16,8 +16,18 @@ const categoryIcons: Record<string, React.ElementType> = {
   cotton: Leaf,
   "wedding-edit": Heart,
 };
-
 export default async function HomePage() {
+  interface PageProduct {
+    id: string;
+    slug: string;
+    name: string;
+    price: number;
+    discount_price: number | null;
+    category_id: string;
+    status: string;
+    created_at?: string;
+    product_images: { image_url: string; display_order: number | null }[];
+  }
   // Fire-and-forget: clean up expired reservations without blocking render
   expireAllStaleReservations();
 
@@ -65,31 +75,14 @@ export default async function HomePage() {
 
   const activePromotions: Promotion[] = (promotions || []) as Promotion[];
 
-  let availabilityMap = new Map<string, { available_units: number; has_pending_interest: boolean }>();
-  if (products && products.length > 0) {
-    const productIds = products.map((p) => p.id);
-    const { data: availData } = await supabase
-      .from("product_availability")
-      .select("product_id, available_units, has_pending_interest")
-      .in("product_id", productIds);
-
-    if (availData) {
-      availData.forEach((item) => {
-        availabilityMap.set(item.product_id, {
-          available_units: item.available_units || 0,
-          has_pending_interest: item.has_pending_interest || false,
-        });
-      });
-    }
-  }
 
   const fourteenDaysAgoDate = new Date();
   fourteenDaysAgoDate.setDate(fourteenDaysAgoDate.getDate() - 14);
   const fourteenDaysAgo = fourteenDaysAgoDate.toISOString();
 
-  function mapToCardItem(product: any) {
+  function mapToCardItem(product: PageProduct) {
     const sortedImages = [...(product.product_images || [])].sort(
-      (a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0)
+      (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
     );
     const imageUrl = sortedImages.length > 0 ? sortedImages[0].image_url : "";
 
@@ -103,10 +96,7 @@ export default async function HomePage() {
       activePromotions
     );
 
-    const availData = availabilityMap.get(product.id);
-    const availableUnits = availData?.available_units ?? 0;
-    const hasPendingInterest = availData?.has_pending_interest ?? false;
-    const computedStatus = availableUnits > 0 ? "available" : "sold";
+    const computedStatus = product.status || "available";
 
     return {
       slug: product.slug,
@@ -114,8 +104,6 @@ export default async function HomePage() {
       price: product.price,
       discountPrice: effectiveDiscount,
       status: computedStatus as "available" | "reserved" | "sold",
-      availableUnits,
-      hasPendingInterest,
       image: imageUrl,
     };
   }
@@ -138,7 +126,7 @@ export default async function HomePage() {
             <Link href={activeBanner.link_url} className="block w-full">
               <div className="relative w-full" style={{ aspectRatio: "16/5" }}>
                 <Image
-                  src={getImageUrl(activeBanner.image_url, 1400)}
+                  src={getImageUrl(activeBanner.image_url, 800)}
                   alt={activeBanner.title}
                   fill
                   className="object-cover"
@@ -157,7 +145,7 @@ export default async function HomePage() {
           ) : (
             <div className="relative w-full" style={{ aspectRatio: "16/5" }}>
               <Image
-                src={getImageUrl(activeBanner.image_url, 1400)}
+                src={getImageUrl(activeBanner.image_url, 800)}
                 alt={activeBanner.title}
                 fill
                 className="object-cover"
@@ -180,7 +168,7 @@ export default async function HomePage() {
           {newArrivals.length > 0 && newArrivals[0].image && (
             <div className="absolute inset-0 z-0">
               <Image
-                src={getImageUrl(newArrivals[0].image, 1400)}
+                src={getImageUrl(newArrivals[0].image, 800)}
                 alt={newArrivals[0].name}
                 fill
                 className="object-cover object-center opacity-40 mix-blend-overlay"

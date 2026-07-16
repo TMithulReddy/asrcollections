@@ -50,7 +50,7 @@ export default function RecentlyViewedSection() {
       if (productData) {
         const activePromos = promos || [];
         
-        let availabilityMap = new Map<string, { available_units: number; has_pending_interest: boolean }>();
+        const availabilityMap = new Map<string, { available_units: number; has_pending_interest: boolean }>();
         if (productData.length > 0) {
           const productIds = productData.map((p) => p.id);
           const { data: availData } = await supabase

@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
+import { ComponentProps } from "react";
 import { X, Plus } from "lucide-react";
 import AdminProductsTable from "@/components/admin/AdminProductsTable";
 
@@ -102,7 +103,7 @@ export default async function AdminProductsPage({
         </div>
       )}
 
-      <AdminProductsTable products={productsWithAvailability as any} categories={categories || []} />
+      <AdminProductsTable products={productsWithAvailability as unknown as ComponentProps<typeof AdminProductsTable>["products"]} categories={categories || []} />
     </div>
   );
 }

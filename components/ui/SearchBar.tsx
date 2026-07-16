@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, X } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { usePathname } from "next/navigation";
 
@@ -120,9 +121,11 @@ export default function SearchBar() {
                       className="flex items-center gap-3 p-3 hover:bg-brand-blush transition-colors group"
                     >
                       {imageUrl ? (
-                        <img
+                        <Image
                           src={imageUrl}
                           alt={product.name}
+                          width={48}
+                          height={48}
                           className="w-12 h-12 object-cover rounded-md group-hover:opacity-90 transition-opacity"
                         />
                       ) : (

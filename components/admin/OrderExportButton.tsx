@@ -1,8 +1,6 @@
 "use client";
 
 import { Download } from "lucide-react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 
 export interface ExportOrder {
   order_ref: string;
@@ -19,12 +17,14 @@ interface OrderExportButtonProps {
 }
 
 export default function OrderExportButton({ orders }: OrderExportButtonProps) {
-  const handleExport = () => {
+  const handleExport = async () => {
     if (orders.length === 0) {
       alert("No orders to export in this view.");
       return;
     }
 
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
     const doc = new jsPDF();
 
     doc.setFont("helvetica", "bold");

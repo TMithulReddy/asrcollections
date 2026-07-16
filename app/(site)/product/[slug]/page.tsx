@@ -135,23 +135,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
     .neq("id", product.id)
     .limit(4);
 
-  let relatedAvailabilityMap = new Map<string, { available_units: number; has_pending_interest: boolean }>();
-  if (relatedData && relatedData.length > 0) {
-    const relatedIds = relatedData.map((r) => r.id);
-    const { data: relatedAvail } = await supabase
-      .from("product_availability")
-      .select("product_id, available_units, has_pending_interest")
-      .in("product_id", relatedIds);
-      
-    if (relatedAvail) {
-      relatedAvail.forEach((item) => {
-        relatedAvailabilityMap.set(item.product_id, {
-          available_units: item.available_units || 0,
-          has_pending_interest: item.has_pending_interest || false,
-        });
-      });
-    }
-  }
 
   const relatedProducts = (relatedData || []).map((related) => {
     const rSorted = [...(related.product_images || [])].sort(
@@ -168,10 +151,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       activePromotions
     );
 
-    const availData = relatedAvailabilityMap.get(related.id);
-    const relatedAvailUnits = availData?.available_units ?? 0;
-    const relatedHasPending = availData?.has_pending_interest ?? false;
-    const computedRelatedStatus = relatedAvailUnits > 0 ? "available" : "sold";
+    const computedRelatedStatus = related.status || "available";
 
     return {
       slug: related.slug,
@@ -179,22 +159,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
       price: related.price,
       discountPrice: relatedDiscount,
       status: computedRelatedStatus as ProductStatus,
-      availableUnits: relatedAvailUnits,
-      hasPendingInterest: relatedHasPending,
       image: rSorted.length > 0 ? rSorted[0].image_url : "",
     };
   });
 
-  const { data: availabilityRow } = await supabase
-    .from("product_availability")
-    .select("available_units, has_pending_interest")
-    .eq("product_id", product.id)
-    .single();
-
-  const availableUnits = availabilityRow?.available_units ?? 0;
-  const hasPendingInterest = availabilityRow?.has_pending_interest ?? false;
-  const isUnavailable = availableUnits === 0;
-  const computedStatus: ProductStatus = availableUnits > 0 ? "available" : "sold";
+  const computedStatus: ProductStatus = product.status || "available";
+  const isUnavailable = computedStatus === "sold";
   const note = statusNote(computedStatus);
 
   return (
@@ -214,11 +184,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
             >
               {statusLabel(computedStatus)}
             </span>
-            {computedStatus === "available" && (
-              <span className="text-sm font-medium text-brand-plum/70">
-                {availableUnits <= 2 ? `Only ${availableUnits} left` : `${availableUnits} in stock`}
-              </span>
-            )}
           </div>
 
           <h1 className="mt-3 font-heading text-2xl text-brand-plum sm:text-3xl">
@@ -269,11 +234,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
             />
             {note && (
               <p className="text-sm text-brand-rose">{note}</p>
-            )}
-            {computedStatus === "available" && hasPendingInterest && (
-              <p className="text-sm text-brand-mauve mt-2">
-                Someone has already shown interest in this saree — message us to check availability.
-              </p>
             )}
           </div>
         </div>

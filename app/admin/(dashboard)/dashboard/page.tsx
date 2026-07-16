@@ -27,11 +27,9 @@ export default async function AdminDashboardPage() {
     .select("available_units, sold_units");
     
   let availableUnits = 0;
-  let soldUnits = 0;
   if (availabilityData) {
     for (const item of availabilityData) {
       availableUnits += item.available_units || 0;
-      soldUnits += item.sold_units || 0;
     }
   }
 
@@ -110,9 +108,7 @@ export default async function AdminDashboardPage() {
                 >
                   <div>
                     <p className="font-medium text-brand-plum">{order.order_ref}</p>
-                    <p className="text-sm text-brand-plum/70">
-                      {Array.isArray(order.customers) ? (order.customers[0] as any)?.name : (order.customers as any)?.name}
-                    </p>
+                      {Array.isArray(order.customers) ? (order.customers[0] as { name?: string })?.name : (order.customers as { name?: string })?.name}
                   </div>
                   <div className="flex items-center gap-4">
                     <p className="font-medium text-brand-plum">{formatPrice(order.total_amount)}</p>
