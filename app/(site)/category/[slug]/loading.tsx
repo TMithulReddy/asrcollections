@@ -8,11 +8,9 @@ export default function Loading() {
         <div className="h-4 w-24 rounded bg-brand-blushDark animate-pulse" />
       </header>
 
-      {/* Row of filter bar placeholders (3 rounded rectangles) */}
-      <div className="mt-6 mb-6 flex items-center gap-2 overflow-hidden">
-        <div className="h-10 w-24 rounded-full bg-brand-blushDark animate-pulse shrink-0" />
-        <div className="h-10 w-24 rounded-full bg-brand-blushDark animate-pulse shrink-0" />
-        <div className="h-10 w-24 rounded-full bg-brand-blushDark animate-pulse shrink-0" />
+      {/* Filter bar placeholder */}
+      <div className="mt-6 mb-6">
+        <div className="h-10 w-full rounded-md bg-brand-blushDark animate-pulse" />
       </div>
 
       <ProductGridSkeleton count={8} />
