@@ -15,13 +15,39 @@ export default async function AdminProductsPage() {
       slug,
       name,
       price,
-      status,
       category_id,
       updated_at,
       categories (name),
       product_images (image_url, display_order)
     `)
     .order("created_at", { ascending: false });
+
+  let productsWithAvailability = products || [];
+  
+  if (products && products.length > 0) {
+    const productIds = products.map((p) => p.id);
+    const { data: availData } = await supabase
+      .from("product_availability")
+      .select("product_id, available_units, sold_units, total_units")
+      .in("product_id", productIds);
+      
+    if (availData) {
+      const availMap = new Map(availData.map((a) => [a.product_id, a]));
+      productsWithAvailability = products.map((p) => ({
+        ...p,
+        availability: {
+          available_units: availMap.get(p.id)?.available_units ?? 0,
+          sold_units: availMap.get(p.id)?.sold_units ?? 0,
+          total_units: availMap.get(p.id)?.total_units ?? 0,
+        }
+      }));
+    } else {
+      productsWithAvailability = products.map((p) => ({
+        ...p,
+        availability: { available_units: 0, sold_units: 0, total_units: 0 }
+      }));
+    }
+  }
 
   const { data: categories, error: catError } = await supabase
     .from("categories")
@@ -45,7 +71,7 @@ export default async function AdminProductsPage() {
         </Link>
       </div>
 
-      <AdminProductsTable products={products || []} categories={categories || []} />
+      <AdminProductsTable products={productsWithAvailability as any} categories={categories || []} />
     </div>
   );
 }

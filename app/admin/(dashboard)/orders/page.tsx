@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import OrderActions from "@/components/admin/OrderActions";
 import OrderExportButton, { ExportOrder } from "@/components/admin/OrderExportButton";
+import OrdersSearchBox from "@/components/admin/OrdersSearchBox";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -167,7 +168,10 @@ export default async function AdminOrdersPage({ searchParams }: OrdersPageProps)
             Total ({counts.total})
           </Link>
         </div>
-        <OrderExportButton orders={exportData} />
+        <div className="flex items-center gap-3">
+          <OrdersSearchBox initialValue={searchParamValue} />
+          <OrderExportButton orders={exportData} />
+        </div>
       </div>
 
       <div className="bg-brand-white rounded-lg border border-brand-rose/20 shadow-sm overflow-hidden">

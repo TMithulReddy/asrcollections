@@ -119,6 +119,21 @@ export default async function AllSareesPage({ searchParams }: AllSareesPageProps
     });
   }
 
+  let availabilityMap = new Map<string, number>();
+  if (filteredProducts.length > 0) {
+    const productIds = filteredProducts.map(p => p.id);
+    const { data: availData } = await supabase
+      .from("product_availability")
+      .select("product_id, available_units")
+      .in("product_id", productIds);
+      
+    if (availData) {
+      availData.forEach(item => {
+        availabilityMap.set(item.product_id, item.available_units || 0);
+      });
+    }
+  }
+
   const allProducts: ProductCardItem[] = filteredProducts.map((product) => {
     const sortedImages = [...(product.product_images || [])].sort(
       (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
@@ -135,12 +150,15 @@ export default async function AllSareesPage({ searchParams }: AllSareesPageProps
       activePromotions
     );
 
+    const availableUnits = availabilityMap.get(product.id) ?? 0;
+    const computedStatus = availableUnits > 0 ? "available" : "sold";
+
     return {
       slug: product.slug,
       name: product.name,
       price: product.price,
       discountPrice: effectiveDiscount,
-      status: product.status as ProductStatus,
+      status: computedStatus as ProductStatus,
       image: imageUrl,
     };
   });

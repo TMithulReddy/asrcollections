@@ -7,7 +7,6 @@ import { formatRelativeTime } from "@/lib/time-utils";
 import ProductListActions from "./ProductListActions";
 import {
   bulkUpdateCategory,
-  bulkUpdateStatus,
   bulkDeleteProducts,
   updateProductInline
 } from "@/app/admin/(dashboard)/products/actions";
@@ -27,10 +26,14 @@ interface Product {
   slug: string;
   name: string;
   price: number;
-  status: string;
   category_id: string;
   updated_at: string;
   product_images?: ProductImage[];
+  availability: {
+    available_units: number;
+    sold_units: number;
+    total_units: number;
+  };
 }
 
 interface AdminProductsTableProps {
@@ -72,7 +75,7 @@ export default function AdminProductsTable({ products, categories }: AdminProduc
     }, 2000);
   };
 
-  const handleInlineEdit = async (productId: string, field: "status" | "category_id", value: string) => {
+  const handleInlineEdit = async (productId: string, field: "category_id", value: string) => {
     const key = `${productId}-${field}`;
     try {
       await updateProductInline(productId, field, value);
@@ -99,17 +102,7 @@ export default function AdminProductsTable({ products, categories }: AdminProduc
     }
   };
 
-  const handleBulkStatus = async (status: string) => {
-    setIsProcessing(true);
-    try {
-      await bulkUpdateStatus(Array.from(selectedIds), status);
-      setSelectedIds(new Set());
-    } catch {
-      alert("Bulk status update failed.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+
 
   const handleBulkDelete = async () => {
     if (!confirm(`Delete ${selectedIds.size} products? This cannot be undone.`)) return;
@@ -149,21 +142,6 @@ export default function AdminProductsTable({ products, categories }: AdminProduc
                 </option>
               ))}
             </select>
-            
-            <button
-              disabled={isProcessing}
-              onClick={() => handleBulkStatus("available")}
-              className="px-2 py-1 text-xs border border-brand-rose/40 rounded bg-white hover:bg-green-50 text-brand-plum transition-colors"
-            >
-              Mark as available
-            </button>
-            <button
-              disabled={isProcessing}
-              onClick={() => handleBulkStatus("sold")}
-              className="px-2 py-1 text-xs border border-brand-rose/40 rounded bg-white hover:bg-red-50 text-brand-plum transition-colors"
-            >
-              Mark as sold
-            </button>
             <button
               disabled={isProcessing}
               onClick={handleBulkDelete}
@@ -270,24 +248,13 @@ export default function AdminProductsTable({ products, categories }: AdminProduc
                     ₹{Number(product.price).toLocaleString("en-IN")}
                   </td>
                   <td className="px-6 py-4 relative">
-                    <select
-                      value={product.status}
-                      onChange={(e) => handleInlineEdit(product.id, "status", e.target.value)}
-                      className={`text-xs font-medium py-1 px-2 rounded-md focus:outline-none cursor-pointer ${
-                        product.status === "available"
-                          ? "bg-green-100 text-green-800"
-                          : product.status === "reserved"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      <option value="available">Available</option>
-                      <option value="reserved">Reserved</option>
-                      <option value="sold">Sold</option>
-                    </select>
-                    {inlineSaveStatus[`${product.id}-status`] && (
-                      <span className="absolute top-1/2 -translate-y-1/2 -left-10 text-[10px] text-green-600 font-medium animate-pulse bg-green-50 px-1 rounded border border-green-200">
-                        {inlineSaveStatus[`${product.id}-status`]}
+                    {product.availability.available_units > 0 ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {product.availability.available_units} available
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        Sold out
                       </span>
                     )}
                   </td>

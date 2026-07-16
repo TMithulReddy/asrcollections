@@ -15,19 +15,25 @@ export default async function AdminDashboardPage() {
   
   const { data: pendingOrders } = await supabase
     .from("orders")
-    .select("order_ref, name, total_amount, created_at")
+    .select("order_ref, total_amount, created_at, customers(name)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
     
   const pendingOrdersCount = pendingOrders?.length || 0;
   const recentPending = pendingOrders?.slice(0, 5) || [];
   
-  const { data: products } = await supabase
-    .from("products")
-    .select("status");
+  const { data: availabilityData } = await supabase
+    .from("product_availability")
+    .select("available_units, sold_units");
     
-  const activeProducts = products?.filter(p => p.status === "available").length || 0;
-  const reservedProducts = products?.filter(p => p.status === "reserved").length || 0;
+  let availableUnits = 0;
+  let soldUnits = 0;
+  if (availabilityData) {
+    for (const item of availabilityData) {
+      availableUnits += item.available_units || 0;
+      soldUnits += item.sold_units || 0;
+    }
+  }
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -61,22 +67,22 @@ export default async function AdminDashboardPage() {
           </div>
         </Link>
         
-        {/* Active Products */}
+        {/* Available Units */}
         <div className="bg-brand-white border border-brand-rose/20 rounded-lg p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <Tag className="w-5 h-5 text-brand-mauve" />
-            <h2 className="text-sm font-medium text-brand-plum/80">Active products</h2>
+            <h2 className="text-sm font-medium text-brand-plum/80">Available units</h2>
           </div>
-          <p className="text-3xl font-bold text-brand-plum">{activeProducts}</p>
+          <p className="text-3xl font-bold text-brand-plum">{availableUnits}</p>
         </div>
         
-        {/* Reserved right now */}
+        {/* Awaiting confirmation */}
         <div className="bg-brand-white border border-brand-rose/20 rounded-lg p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <ShieldCheck className="w-5 h-5 text-brand-mauve" />
-            <h2 className="text-sm font-medium text-brand-plum/80">Reserved right now</h2>
+            <h2 className="text-sm font-medium text-brand-plum/80">Awaiting confirmation</h2>
           </div>
-          <p className="text-3xl font-bold text-brand-plum">{reservedProducts}</p>
+          <p className="text-3xl font-bold text-brand-plum">{pendingOrdersCount}</p>
         </div>
         
         {/* Sold this month */}
@@ -104,7 +110,9 @@ export default async function AdminDashboardPage() {
                 >
                   <div>
                     <p className="font-medium text-brand-plum">{order.order_ref}</p>
-                    <p className="text-sm text-brand-plum/70">{order.name}</p>
+                    <p className="text-sm text-brand-plum/70">
+                      {Array.isArray(order.customers) ? (order.customers[0] as any)?.name : (order.customers as any)?.name}
+                    </p>
                   </div>
                   <div className="flex items-center gap-4">
                     <p className="font-medium text-brand-plum">{formatPrice(order.total_amount)}</p>

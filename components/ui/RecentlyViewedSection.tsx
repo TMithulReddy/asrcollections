@@ -49,6 +49,22 @@ export default function RecentlyViewedSection() {
 
       if (productData) {
         const activePromos = promos || [];
+        
+        let availabilityMap = new Map<string, number>();
+        if (productData.length > 0) {
+          const productIds = productData.map((p) => p.id);
+          const { data: availData } = await supabase
+            .from("product_availability")
+            .select("product_id, available_units")
+            .in("product_id", productIds);
+
+          if (availData) {
+            availData.forEach((item) => {
+              availabilityMap.set(item.product_id, item.available_units || 0);
+            });
+          }
+        }
+        
         const ordered = viewedSlugs
           .map((slug) => productData.find((p) => p.slug === slug))
           .filter((p): p is NonNullable<typeof p> => Boolean(p));
@@ -64,12 +80,15 @@ export default function RecentlyViewedSection() {
             activePromos as Promotion[]
           );
 
+          const availableUnits = availabilityMap.get(p.id) ?? 0;
+          const computedStatus = availableUnits > 0 ? "available" : "sold";
+
           return {
             slug: p.slug,
             name: p.name,
             price: p.price,
             discountPrice: effectiveDiscount,
-            status: p.status,
+            status: computedStatus as "available" | "reserved" | "sold",
             image: sortedImages.length > 0 ? sortedImages[0].image_url : "",
           };
         });

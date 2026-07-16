@@ -65,6 +65,21 @@ export default async function HomePage() {
 
   const activePromotions: Promotion[] = (promotions || []) as Promotion[];
 
+  let availabilityMap = new Map<string, number>();
+  if (products && products.length > 0) {
+    const productIds = products.map((p) => p.id);
+    const { data: availData } = await supabase
+      .from("product_availability")
+      .select("product_id, available_units")
+      .in("product_id", productIds);
+
+    if (availData) {
+      availData.forEach((item) => {
+        availabilityMap.set(item.product_id, item.available_units || 0);
+      });
+    }
+  }
+
   const newArrivals = (products || []).map((product) => {
     // Sort images by display_order
     const sortedImages = [...(product.product_images || [])].sort(
@@ -82,12 +97,15 @@ export default async function HomePage() {
       activePromotions
     );
 
+    const availableUnits = availabilityMap.get(product.id) ?? 0;
+    const computedStatus = availableUnits > 0 ? "available" : "sold";
+
     return {
       slug: product.slug,
       name: product.name,
       price: product.price,
       discountPrice: effectiveDiscount,
-      status: product.status as "available" | "reserved" | "sold",
+      status: computedStatus as "available" | "reserved" | "sold",
       image: imageUrl,
     };
   });

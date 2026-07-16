@@ -29,11 +29,8 @@ function statusBadgeClass(status: ProductStatus): string {
 }
 
 function statusNote(status: ProductStatus): string | null {
-  if (status === "reserved") {
-    return "This saree is currently reserved and cannot be purchased right now.";
-  }
   if (status === "sold") {
-    return "This saree has been sold and is no longer available.";
+    return "This saree has been sold out and is no longer available.";
   }
   return null;
 }
@@ -138,6 +135,21 @@ export default async function ProductPage({ params }: ProductPageProps) {
     .neq("id", product.id)
     .limit(4);
 
+  let relatedAvailabilityMap = new Map<string, number>();
+  if (relatedData && relatedData.length > 0) {
+    const relatedIds = relatedData.map((r) => r.id);
+    const { data: relatedAvail } = await supabase
+      .from("product_availability")
+      .select("product_id, available_units")
+      .in("product_id", relatedIds);
+      
+    if (relatedAvail) {
+      relatedAvail.forEach((item) => {
+        relatedAvailabilityMap.set(item.product_id, item.available_units || 0);
+      });
+    }
+  }
+
   const relatedProducts = (relatedData || []).map((related) => {
     const rSorted = [...(related.product_images || [])].sort(
       (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
@@ -153,18 +165,29 @@ export default async function ProductPage({ params }: ProductPageProps) {
       activePromotions
     );
 
+    const relatedAvailUnits = relatedAvailabilityMap.get(related.id) ?? 0;
+    const computedRelatedStatus = relatedAvailUnits > 0 ? "available" : "sold";
+
     return {
       slug: related.slug,
       name: related.name,
       price: related.price,
       discountPrice: relatedDiscount,
-      status: related.status as ProductStatus,
+      status: computedRelatedStatus as ProductStatus,
       image: rSorted.length > 0 ? rSorted[0].image_url : "",
     };
   });
 
-  const isUnavailable = product.status !== "available";
-  const note = statusNote(product.status as ProductStatus);
+  const { data: availabilityRow } = await supabase
+    .from("product_availability")
+    .select("available_units")
+    .eq("product_id", product.id)
+    .single();
+
+  const availableUnits = availabilityRow?.available_units ?? 0;
+  const isUnavailable = availableUnits === 0;
+  const computedStatus: ProductStatus = availableUnits > 0 ? "available" : "sold";
+  const note = statusNote(computedStatus);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -173,14 +196,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <ProductGallery
           images={sortedImages}
           alt={product.name}
-          dimmed={product.status === "sold"}
+          dimmed={isUnavailable}
         />
 
         <div>
           <span
-            className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${statusBadgeClass(product.status as ProductStatus)}`}
+            className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${statusBadgeClass(computedStatus)}`}
           >
-            {statusLabel(product.status as ProductStatus)}
+            {statusLabel(computedStatus)}
           </span>
 
           <h1 className="mt-3 font-heading text-2xl text-brand-plum sm:text-3xl">

@@ -37,19 +37,7 @@ export async function bulkUpdateCategory(productIds: string[], categoryId: strin
   return { success: true };
 }
 
-export async function bulkUpdateStatus(productIds: string[], status: string) {
-  const supabase = createClient();
-  const updateData: Record<string, string | null> = { status };
-  if (status === "available" || status === "sold") {
-    updateData.reserved_until = null;
-  }
-  const { error } = await supabase.from("products").update(updateData).in("id", productIds);
-  if (error) throw new Error(error.message);
-  revalidatePath("/admin/products");
-  revalidatePath("/sarees");
-  revalidatePath("/");
-  return { success: true };
-}
+
 
 export async function bulkDeleteProducts(productIds: string[]) {
   const supabase = createClient();
@@ -63,16 +51,12 @@ export async function bulkDeleteProducts(productIds: string[]) {
 }
 
 export async function updateProductInline(productId: string, field: string, value: string) {
-  if (field !== "status" && field !== "category_id") {
-    throw new Error(`Invalid field: ${field}. Only 'status' and 'category_id' can be updated inline.`);
+  if (field !== "category_id") {
+    throw new Error(`Invalid field: ${field}. Only 'category_id' can be updated inline.`);
   }
 
   const supabase = createClient();
   const updateData: Record<string, string | null> = { [field]: value };
-  
-  if (field === "status" && (value === "available" || value === "sold")) {
-    updateData.reserved_until = null;
-  }
 
   const { error } = await supabase.from("products").update(updateData).eq("id", productId);
   if (error) throw new Error(error.message);
