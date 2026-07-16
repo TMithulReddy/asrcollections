@@ -65,17 +65,20 @@ export default async function HomePage() {
 
   const activePromotions: Promotion[] = (promotions || []) as Promotion[];
 
-  let availabilityMap = new Map<string, number>();
+  let availabilityMap = new Map<string, { available_units: number; has_pending_interest: boolean }>();
   if (products && products.length > 0) {
     const productIds = products.map((p) => p.id);
     const { data: availData } = await supabase
       .from("product_availability")
-      .select("product_id, available_units")
+      .select("product_id, available_units, has_pending_interest")
       .in("product_id", productIds);
 
     if (availData) {
       availData.forEach((item) => {
-        availabilityMap.set(item.product_id, item.available_units || 0);
+        availabilityMap.set(item.product_id, {
+          available_units: item.available_units || 0,
+          has_pending_interest: item.has_pending_interest || false,
+        });
       });
     }
   }
@@ -97,7 +100,9 @@ export default async function HomePage() {
       activePromotions
     );
 
-    const availableUnits = availabilityMap.get(product.id) ?? 0;
+    const availData = availabilityMap.get(product.id);
+    const availableUnits = availData?.available_units ?? 0;
+    const hasPendingInterest = availData?.has_pending_interest ?? false;
     const computedStatus = availableUnits > 0 ? "available" : "sold";
 
     return {
@@ -106,6 +111,8 @@ export default async function HomePage() {
       price: product.price,
       discountPrice: effectiveDiscount,
       status: computedStatus as "available" | "reserved" | "sold",
+      availableUnits,
+      hasPendingInterest,
       image: imageUrl,
     };
   });

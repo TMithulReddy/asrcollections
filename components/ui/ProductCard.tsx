@@ -15,6 +15,8 @@ interface ProductCardProps {
   price: number;
   discountPrice?: number;
   status: ProductStatus;
+  availableUnits?: number;
+  hasPendingInterest?: boolean;
 }
 
 function formatPrice(amount: number | string): string {
@@ -28,6 +30,8 @@ export default function ProductCard({
   price,
   discountPrice,
   status,
+  availableUnits,
+  hasPendingInterest,
 }: ProductCardProps) {
   const imageWidth = 400;
   const imageHeight = 533;
@@ -67,6 +71,18 @@ export default function ProductCard({
           {status === "sold" && (
             <span className="absolute left-2 top-2 rounded px-2 py-0.5 text-xs font-medium bg-brand-mauve text-brand-white pointer-events-none">
               Sold
+            </span>
+          )}
+          
+          {status === "available" && availableUnits !== undefined && availableUnits <= 2 && (
+            <span className="absolute left-2 top-2 rounded px-2 py-0.5 text-xs font-medium bg-brand-mauve text-brand-white pointer-events-none">
+              Only {availableUnits} left
+            </span>
+          )}
+          
+          {status === "available" && hasPendingInterest && (availableUnits === undefined || availableUnits > 2) && (
+            <span className="absolute left-2 top-2 rounded px-2 py-0.5 text-xs font-medium bg-brand-mauve text-brand-white pointer-events-none">
+              Reserved
             </span>
           )}
         </div>

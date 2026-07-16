@@ -50,17 +50,20 @@ export default function RecentlyViewedSection() {
       if (productData) {
         const activePromos = promos || [];
         
-        let availabilityMap = new Map<string, number>();
+        let availabilityMap = new Map<string, { available_units: number; has_pending_interest: boolean }>();
         if (productData.length > 0) {
           const productIds = productData.map((p) => p.id);
           const { data: availData } = await supabase
             .from("product_availability")
-            .select("product_id, available_units")
+            .select("product_id, available_units, has_pending_interest")
             .in("product_id", productIds);
 
           if (availData) {
             availData.forEach((item) => {
-              availabilityMap.set(item.product_id, item.available_units || 0);
+              availabilityMap.set(item.product_id, {
+                available_units: item.available_units || 0,
+                has_pending_interest: item.has_pending_interest || false
+              });
             });
           }
         }
@@ -80,7 +83,9 @@ export default function RecentlyViewedSection() {
             activePromos as Promotion[]
           );
 
-          const availableUnits = availabilityMap.get(p.id) ?? 0;
+          const availData = availabilityMap.get(p.id);
+          const availableUnits = availData?.available_units ?? 0;
+          const hasPendingInterest = availData?.has_pending_interest ?? false;
           const computedStatus = availableUnits > 0 ? "available" : "sold";
 
           return {
@@ -89,6 +94,8 @@ export default function RecentlyViewedSection() {
             price: p.price,
             discountPrice: effectiveDiscount,
             status: computedStatus as "available" | "reserved" | "sold",
+            availableUnits,
+            hasPendingInterest,
             image: sortedImages.length > 0 ? sortedImages[0].image_url : "",
           };
         });
