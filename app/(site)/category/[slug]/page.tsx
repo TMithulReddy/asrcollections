@@ -7,6 +7,8 @@ import { getEffectivePrice, type Promotion } from "@/lib/get-effective-price";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 type ProductStatus = "available" | "reserved" | "sold";
 
 interface ProductCardItem {

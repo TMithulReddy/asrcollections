@@ -6,6 +6,8 @@ import { expireAllStaleReservations } from "@/lib/expire-reservations";
 import { getEffectivePrice, type Promotion } from "@/lib/get-effective-price";
 import { Suspense } from "react";
 
+export const dynamic = "force-dynamic";
+
 type ProductStatus = "available" | "reserved" | "sold";
 
 interface ProductCardItem {

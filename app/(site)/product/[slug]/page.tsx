@@ -9,6 +9,8 @@ import { getEffectivePrice, type Promotion } from "@/lib/get-effective-price";
 import type { Metadata } from "next";
 import { getImageUrl } from "@/lib/cloudinary";
 
+export const dynamic = "force-dynamic";
+
 type ProductStatus = "available" | "reserved" | "sold";
 
 function formatPrice(amount: number | string): string {

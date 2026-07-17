@@ -10,6 +10,8 @@ import { expireAllStaleReservations } from "@/lib/expire-reservations";
 import { getEffectivePrice, type Promotion } from "@/lib/get-effective-price";
 import { getImageUrl } from "@/lib/cloudinary";
 
+export const dynamic = "force-dynamic";
+
 const categoryIcons: Record<string, React.ElementType> = {
   kanjivaram: Sparkles,
   banarasi: Gem,
