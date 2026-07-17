@@ -172,6 +172,8 @@ export default function ProductForm({ categories, initialData, availability }: P
       {
         cloudName: "hzxrxgf1",
         uploadPreset: "asr_products",
+        folder: "asr-products",
+        public_id_prefix: "asr-products",
         multiple: true,
         sources: ["local", "camera"],
         maxFiles: 10,

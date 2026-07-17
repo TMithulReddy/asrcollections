@@ -55,6 +55,8 @@ export default function BannerManager({ initialBanners }: { initialBanners: Bann
       {
         cloudName: "hzxrxgf1",
         uploadPreset: "asr_products",
+        folder: "asr-banners",
+        public_id_prefix: "asr-banners",
         multiple: false,
         sources: ["local", "camera"],
         resourceType: "image",
