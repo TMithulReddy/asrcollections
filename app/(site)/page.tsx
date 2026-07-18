@@ -178,7 +178,7 @@ export default async function HomePage() {
               <CheckCircle2 className="h-4 w-4 sm:h-7 sm:w-7 text-brand-mauve sm:mb-4 shrink-0" strokeWidth={1.5} />
               <div>
                 <h3 className="text-[13px] sm:text-base text-brand-plum font-medium sm:mb-1 whitespace-nowrap sm:whitespace-normal">One of a kind</h3>
-                <p className="hidden sm:block text-sm text-brand-plum/70 leading-relaxed">Every piece is handpicked — once it's gone, it's gone.</p>
+                <p className="hidden sm:block text-sm text-brand-plum/70 leading-relaxed">Every piece is handpicked — once it&apos;s gone, it&apos;s gone.</p>
               </div>
             </div>
             

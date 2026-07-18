@@ -1,6 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { LogOut } from "lucide-react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminSearch from "@/components/admin/AdminSearch";
