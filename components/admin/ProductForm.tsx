@@ -47,6 +47,7 @@ interface ProductFormProps {
     description: string;
     price: number;
     discount_price: number | null;
+    is_featured: boolean;
     units: ProductUnit[];
     images: string[]; // public_ids
   };
@@ -81,6 +82,7 @@ export default function ProductForm({ categories, initialData, availability }: P
   const initialOnSale =
     initialData != null && initialData.discount_price != null && initialData.discount_price > 0;
   const [onSale, setOnSale] = useState(initialOnSale);
+  const [isFeatured, setIsFeatured] = useState(initialData?.is_featured ?? false);
 
   // Back-calculate initial discount percentage from price & discount_price
   const computeInitialPct = (): string => {
@@ -253,6 +255,7 @@ export default function ProductForm({ categories, initialData, availability }: P
         description: description.trim(),
         price: Number(price),
         discount_price: computedDiscountPrice,
+        is_featured: isFeatured,
       };
 
       let productId: string;
@@ -413,7 +416,7 @@ export default function ProductForm({ categories, initialData, availability }: P
 
       {/* Price + Sale Toggle */}
       <div className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label htmlFor="price" className={labelClass}>Price (₹) *</label>
             <input id="price" type="number" step="1" min="0" value={price} onChange={(e) => setPrice(e.target.value)} required className={inputClass} />
@@ -444,6 +447,20 @@ export default function ProductForm({ categories, initialData, availability }: P
                   className="accent-brand-plum"
                 />
                 <span className="text-sm text-brand-plum">No</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label className={labelClass}>Show on Homepage?</label>
+            <div className="flex items-center gap-4 mt-1">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isFeatured}
+                  onChange={(e) => setIsFeatured(e.target.checked)}
+                  className="accent-brand-plum w-4 h-4 rounded"
+                />
+                <span className="text-sm text-brand-plum">Featured</span>
               </label>
             </div>
           </div>

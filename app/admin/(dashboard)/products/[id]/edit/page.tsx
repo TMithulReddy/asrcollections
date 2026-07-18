@@ -18,7 +18,7 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
     .from("products")
     .select(`
       id, name, slug, category_id, fabric_type, description,
-      price, discount_price,
+      price, discount_price, is_featured,
       product_images (image_url, display_order),
       product_units (id, sku, status)
     `)
@@ -65,6 +65,7 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
     description: product.description || "",
     price: product.price,
     discount_price: product.discount_price,
+    is_featured: product.is_featured || false,
     units,
     images: sortedImages,
   };

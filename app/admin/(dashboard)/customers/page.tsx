@@ -80,7 +80,8 @@ export default async function AdminCustomersPage({ searchParams }: CustomersPage
       </div>
 
       <div className="bg-brand-white rounded-lg border border-brand-rose/20 shadow-sm overflow-hidden">
-        <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-brand-blush/30 border-b border-brand-rose/20 text-brand-plum text-sm font-medium">
               <th className="px-5 py-4">Name</th>
@@ -135,6 +136,7 @@ export default async function AdminCustomersPage({ searchParams }: CustomersPage
             )}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   );

@@ -267,7 +267,8 @@ export default function BannerManager({ initialBanners }: { initialBanners: Bann
 
       {/* Table */}
       <div className="bg-brand-white rounded-lg border border-brand-rose/20 shadow-sm overflow-hidden">
-        <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-brand-blush/30 border-b border-brand-rose/20 text-brand-plum text-sm font-medium">
               <th className="px-6 py-4">Image</th>
@@ -323,6 +324,7 @@ export default function BannerManager({ initialBanners }: { initialBanners: Bann
             )}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   );

@@ -105,10 +105,11 @@ export default async function AllSareesPage({ searchParams }: AllSareesPageProps
   }
 
   if (searchParams.new === "true") {
-    const fourteenDaysAgoDate = new Date();
-    fourteenDaysAgoDate.setDate(fourteenDaysAgoDate.getDate() - 14);
-    const fourteenDaysAgo = fourteenDaysAgoDate.toISOString();
-    filteredProducts = filteredProducts.filter((p) => p.created_at && p.created_at >= fourteenDaysAgo);
+    filteredProducts = filteredProducts.filter((p) => p.is_new_arrival === true);
+  }
+
+  if (searchParams.featured === "true") {
+    filteredProducts = filteredProducts.filter((p) => p.is_featured === true);
   }
 
   const sort = typeof searchParams.sort === "string" ? searchParams.sort : "newest";
@@ -174,6 +175,8 @@ export default async function AllSareesPage({ searchParams }: AllSareesPageProps
     pageTitle = "On Sale";
   } else if (searchParams.new === "true") {
     pageTitle = "New Arrivals";
+  } else if (searchParams.featured === "true") {
+    pageTitle = "Handpicked for you";
   }
 
   return (

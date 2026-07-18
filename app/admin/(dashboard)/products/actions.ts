@@ -50,13 +50,13 @@ export async function bulkDeleteProducts(productIds: string[]) {
   return { success: true };
 }
 
-export async function updateProductInline(productId: string, field: string, value: string) {
-  if (field !== "category_id") {
-    throw new Error(`Invalid field: ${field}. Only 'category_id' can be updated inline.`);
+export async function updateProductInline(productId: string, field: string, value: any) {
+  if (field !== "category_id" && field !== "is_featured" && field !== "is_new_arrival" && field !== "discount_price") {
+    throw new Error(`Invalid field: ${field}. Only 'category_id', 'is_featured', 'is_new_arrival', or 'discount_price' can be updated inline.`);
   }
 
   const supabase = createClient();
-  const updateData: Record<string, string | null> = { [field]: value };
+  const updateData: Record<string, any> = { [field]: value };
 
   const { error } = await supabase.from("products").update(updateData).eq("id", productId);
   if (error) throw new Error(error.message);

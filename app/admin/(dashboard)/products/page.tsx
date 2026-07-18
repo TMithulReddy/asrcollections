@@ -21,7 +21,10 @@ export default async function AdminProductsPage({
       slug,
       name,
       price,
+      discount_price,
       category_id,
+      is_featured,
+      is_new_arrival,
       updated_at,
       categories (name),
       product_images (image_url, display_order)

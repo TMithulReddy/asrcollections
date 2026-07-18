@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
-import SidebarNav from "@/components/admin/SidebarNav";
+import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminSearch from "@/components/admin/AdminSearch";
 
 export default async function AdminLayout({
@@ -11,27 +11,9 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen bg-brand-white">
+    <div className="flex flex-col md:flex-row h-screen bg-brand-white">
       {/* Sidebar */}
-      <aside className="w-56 bg-brand-plum border-r border-brand-rose/20 flex flex-col">
-        <div className="p-6 pb-4">
-          <Link href="/admin/dashboard" className="text-xl font-heading text-brand-white">
-            ASR Admin
-          </Link>
-        </div>
-        
-        <div className="px-4 pb-4 border-b border-brand-blush/20 mb-4">
-          <Link 
-            href="/" 
-            className="flex items-center w-full px-4 py-2 text-brand-blush border border-brand-blush/20 hover:bg-brand-mauve/20 rounded-md transition-colors text-sm"
-          >
-            ← Back to Store
-          </Link>
-        </div>
-        
-        <SidebarNav />
-
-        <div className="p-4 border-t border-brand-blush/20">
+      <AdminSidebar>
           <form action={async () => {
             "use server";
             const supabase = createClient();
@@ -46,8 +28,7 @@ export default async function AdminLayout({
               Logout
             </button>
           </form>
-        </div>
-      </aside>
+      </AdminSidebar>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen bg-brand-blush overflow-hidden">
