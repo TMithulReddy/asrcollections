@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import { getImageUrl } from "@/lib/cloudinary";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type ProductStatus = "available" | "reserved" | "sold";
 

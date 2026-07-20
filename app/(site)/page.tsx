@@ -13,6 +13,7 @@ import { getEffectivePrice, type Promotion } from "@/lib/get-effective-price";
 import { getImageUrl } from "@/lib/cloudinary";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const categoryIcons: Record<string, React.ElementType> = {
   kanjivaram: Sparkles,

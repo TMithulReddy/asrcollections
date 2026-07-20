@@ -7,6 +7,7 @@ import { getEffectivePrice, type Promotion } from "@/lib/get-effective-price";
 import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type ProductStatus = "available" | "reserved" | "sold";
 
