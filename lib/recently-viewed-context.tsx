@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, ReactNode } from "react";
 
 interface RecentlyViewedContextType {
   viewedSlugs: string[];
@@ -23,7 +23,7 @@ export function RecentlyViewedProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const addViewedSlug = (slug: string) => {
+  const addViewedSlug = useCallback((slug: string) => {
     setViewedSlugs((prev) => {
       const filtered = prev.filter((s) => s !== slug);
       const next = [slug, ...filtered].slice(0, 8);
@@ -34,10 +34,12 @@ export function RecentlyViewedProvider({ children }: { children: ReactNode }) {
       }
       return next;
     });
-  };
+  }, []);
+
+  const value = useMemo(() => ({ viewedSlugs, addViewedSlug }), [viewedSlugs, addViewedSlug]);
 
   return (
-    <RecentlyViewedContext.Provider value={{ viewedSlugs, addViewedSlug }}>
+    <RecentlyViewedContext.Provider value={value}>
       {children}
     </RecentlyViewedContext.Provider>
   );

@@ -1,4 +1,5 @@
 import AddToCartButton from "@/components/ui/AddToCartButton";
+import BackButton from "@/components/ui/BackButton";
 import BuyNowButton from "@/components/ui/BuyNowButton";
 import ProductCard from "@/components/ui/ProductCard";
 import ProductGallery from "@/components/ui/ProductGallery";
@@ -172,6 +173,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
+      <BackButton />
       <ProductViewTracker slug={params.slug} />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
         <ProductGallery
