@@ -65,7 +65,6 @@ function FulfillmentTimeline({ currentStage }: { currentStage: string | null }) 
           const Icon = stage.icon;
           const isDone = i < current;
           const isCurrent = i === current;
-          const isFuture = i > current;
 
           return (
             <div key={stage.value} className="flex items-center">
