@@ -13,6 +13,7 @@ const navLinks = [
   { href: "/sarees?new=true", label: "New Arrivals" },
   { href: "/category/wedding-edit", label: "Wedding Edit" },
   { href: "/sarees?sale=true", label: "Sale" },
+  { href: "/my-orders", label: "My Orders" },
 ];
 
 const footerLinks = [

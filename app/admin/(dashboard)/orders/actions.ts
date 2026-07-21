@@ -32,3 +32,21 @@ export async function rejectOrder(orderId: string) {
   revalidatePath("/");
   return { success: true, error: null };
 }
+
+export async function advanceFulfillmentStage(orderId: string, stage: string) {
+  const supabase = createClient();
+
+  const { error } = await supabase.rpc("advance_fulfillment_stage", {
+    p_order_id: orderId,
+    p_stage: stage,
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/admin/orders");
+  revalidatePath("/sarees");
+  revalidatePath("/");
+  return { success: true, error: null };
+}

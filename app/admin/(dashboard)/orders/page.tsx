@@ -60,7 +60,7 @@ export default async function AdminOrdersPage({ searchParams }: OrdersPageProps)
   let query = supabase
     .from("orders")
     .select(`
-      id, order_ref, status, total_amount, created_at, confirmed_at,
+      id, order_ref, status, total_amount, created_at, confirmed_at, fulfillment_stage,
       customers (name, phone),
       order_items (id, product_id, product_unit_id, quantity, products (name), product_units (sku, status))
     `)
@@ -241,7 +241,7 @@ export default async function AdminOrdersPage({ searchParams }: OrdersPageProps)
                       })}
                     </td>
                     <td className="px-5 py-4 flex justify-end">
-                      <OrderActions orderId={order.id} status={order.status} />
+                      <OrderActions orderId={order.id} status={order.status} fulfillmentStage={order.fulfillment_stage} />
                     </td>
                   </tr>
                 );
