@@ -4,41 +4,39 @@ import { useRouter, usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export default function BackButton() {
+/**
+ * Inline back button for the admin header.
+ * Shows only when there is navigation history to go back to.
+ */
+export default function AdminBackButton() {
   const router = useRouter();
   const pathname = usePathname();
   const [canGoBack, setCanGoBack] = useState(false);
 
-  // Track whether there's navigation history available
   useEffect(() => {
-    // If history length > 1, user has somewhere to go back to
     setCanGoBack(window.history.length > 1);
   }, [pathname]);
 
-  // Don't render on the homepage or if no history
-  if (pathname === "/" || !canGoBack) return null;
+  if (!canGoBack) return null;
 
   return (
     <button
       onClick={() => router.back()}
       aria-label="Go back"
       className="
-        fixed top-[72px] left-4 z-40
         flex items-center gap-1.5
-        px-3 py-2
+        px-3 py-1.5
         rounded-full
-        bg-brand-white/90 backdrop-blur-sm
         border border-brand-rose/30
         text-sm font-medium text-brand-plum
-        shadow-md
+        bg-brand-blush/50
         transition-all duration-200
-        hover:bg-brand-blush hover:border-brand-mauve/50 hover:shadow-lg hover:-translate-x-0.5
+        hover:bg-brand-blush hover:border-brand-mauve/50 hover:shadow-sm hover:-translate-x-0.5
         active:scale-95
-        sm:left-5
       "
     >
       <ArrowLeft className="h-4 w-4 flex-shrink-0" />
-      <span className="hidden sm:inline">Back</span>
+      Back
     </button>
   );
 }

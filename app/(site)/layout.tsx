@@ -8,6 +8,7 @@ import { CartProvider } from "@/lib/cart-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
 import { RecentlyViewedProvider } from "@/lib/recently-viewed-context";
 import FloatingSocialIcons from "@/components/ui/FloatingSocialIcons";
+import BackButton from "@/components/ui/BackButton";
 
 const navLinks = [
   { href: "/sarees", label: "Sarees" },
@@ -99,6 +100,7 @@ export default function SiteLayout({
             </div>
           </footer>
 
+          <BackButton />
           <FloatingSocialIcons />
         </div>
         </RecentlyViewedProvider>
