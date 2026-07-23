@@ -38,7 +38,6 @@ export default async function HomePage() {
   // Fire-and-forget: clean up expired reservations without blocking render
   expireAllStaleReservations();
 
-  const today = new Date().toISOString().slice(0, 10);
 
   // Fetch all data in parallel for faster page loads
   const [
@@ -74,9 +73,21 @@ export default async function HomePage() {
 
   // Filter banners by date range in JS (Supabase doesn't easily handle
   // "null OR >= today" in a single .or())
+  // Use Date objects — Supabase returns timestamptz as full ISO strings like
+  // "2026-07-23T00:00:00+00:00", so string comparison against a plain YYYY-MM-DD
+  // would silently fail for banners whose start_date is today.
+  const now = new Date();
   const activeBanners = (banners || []).filter((banner) => {
-    if (banner.start_date && today < banner.start_date) return false;
-    if (banner.end_date && today > banner.end_date) return false;
+    if (banner.start_date) {
+      const start = new Date(banner.start_date);
+      if (now < start) return false;
+    }
+    if (banner.end_date) {
+      // Inclusive: allow through the full end day (23:59:59.999)
+      const end = new Date(banner.end_date);
+      end.setHours(23, 59, 59, 999);
+      if (now > end) return false;
+    }
     return true;
   });
 

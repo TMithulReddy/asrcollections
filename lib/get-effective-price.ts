@@ -31,10 +31,21 @@ export interface ProductForPricing {
 function isPromotionCurrentlyActive(promo: Promotion): boolean {
   if (!promo.active) return false;
 
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  // Use Date objects so that full ISO timestamps (e.g. "2026-07-23T00:00:00+00:00")
+  // returned by Supabase timestamptz columns are compared correctly — not as strings.
+  const now = new Date();
 
-  if (promo.start_date && today < promo.start_date) return false;
-  if (promo.end_date && today > promo.end_date) return false;
+  if (promo.start_date) {
+    const start = new Date(promo.start_date);
+    if (now < start) return false;
+  }
+
+  if (promo.end_date) {
+    // Make end_date inclusive through the full end day (23:59:59.999)
+    const end = new Date(promo.end_date);
+    end.setHours(23, 59, 59, 999);
+    if (now > end) return false;
+  }
 
   return true;
 }

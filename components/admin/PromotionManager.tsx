@@ -35,6 +35,13 @@ interface PromotionManagerProps {
   products: Product[];
 }
 
+/** Converts a full ISO timestamp (from Supabase timestamptz) to YYYY-MM-DD for <input type="date"> */
+function toDateInputValue(value: string | null | undefined): string {
+  if (!value) return "";
+  // Slice the first 10 chars covers both "2026-07-23" and "2026-07-23T00:00:00+00:00"
+  return value.slice(0, 10);
+}
+
 export default function PromotionManager({
   initialPromotions,
   categories,
@@ -87,8 +94,8 @@ export default function PromotionManager({
     setFormProductIds(promo.product_ids || []);
     setProductSearch("");
     
-    setFormStartDate(promo.start_date || "");
-    setFormEndDate(promo.end_date || "");
+    setFormStartDate(toDateInputValue(promo.start_date));
+    setFormEndDate(toDateInputValue(promo.end_date));
     setFormActive(promo.active);
     setError("");
     setShowForm(true);
@@ -316,7 +323,7 @@ export default function PromotionManager({
                   <td className="px-6 py-4 text-brand-plum/80">{promo.discount_percent}%</td>
                   <td className="px-6 py-4 text-brand-plum/80">{getAppliesTo(promo)}</td>
                   <td className="px-6 py-4 text-sm text-brand-plum/60">
-                    {promo.start_date || "—"} → {promo.end_date || "—"}
+                    {toDateInputValue(promo.start_date) || "—"} → {toDateInputValue(promo.end_date) || "—"}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${promo.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}`}>

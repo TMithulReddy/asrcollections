@@ -21,6 +21,13 @@ interface Banner {
   active: boolean;
 }
 
+/** Converts a full ISO timestamp (from Supabase timestamptz) to YYYY-MM-DD for <input type="date"> */
+function toDateInputValue(value: string | null | undefined): string {
+  if (!value) return "";
+  // Slice the first 10 chars covers both "2026-07-23" and "2026-07-23T00:00:00+00:00"
+  return value.slice(0, 10);
+}
+
 export default function BannerManager({ initialBanners }: { initialBanners: Banner[] }) {
   const [banners] = useState(initialBanners);
   const [showForm, setShowForm] = useState(false);
@@ -93,8 +100,8 @@ export default function BannerManager({ initialBanners }: { initialBanners: Bann
     setFormImage(banner.image_url);
     setFormLink(banner.link_url || "");
     setFormOrder(String(banner.display_order));
-    setFormStartDate(banner.start_date || "");
-    setFormEndDate(banner.end_date || "");
+    setFormStartDate(toDateInputValue(banner.start_date));
+    setFormEndDate(toDateInputValue(banner.end_date));
     setFormActive(banner.active);
     setError("");
     setShowForm(true);
@@ -302,7 +309,7 @@ export default function BannerManager({ initialBanners }: { initialBanners: Bann
                   <td className="px-6 py-4 font-medium text-brand-plum">{banner.title}</td>
                   <td className="px-6 py-4 text-brand-plum/80">{banner.display_order}</td>
                   <td className="px-6 py-4 text-sm text-brand-plum/60">
-                    {banner.start_date || "—"} → {banner.end_date || "—"}
+                    {toDateInputValue(banner.start_date) || "—"} → {toDateInputValue(banner.end_date) || "—"}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${banner.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}`}>
